@@ -1,21 +1,37 @@
 const display = document.getElementById('display');
 
+// සජීවීව වෙලාව සහ දිනය පෙන්වීම
+function updateDateTime() {
+    const now = new Date();
+    
+    // දිනය සකස් කිරීම
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', options);
+    
+    // වෙලාව සකස් කිරීම
+    document.getElementById('current-time').innerText = now.toLocaleTimeString();
+}
+
+// තත්පරයෙන් තත්පරය වෙලාව Update කිරීම
+setInterval(updateDateTime, 1000);
+updateDateTime();
+
 // ඩිස්ප්ලේ එකට අංක හෝ ලකුණු එකතු කිරීම
 function appendValue(input) {
     display.value += input;
 }
 
-// ඩිස්ප්ලේ එක සම්පූර්ණයෙන්ම clear කිරීම
+// Clear කිරීම
 function clearDisplay() {
     display.value = '';
 }
 
-// අවසානයට යොදපු අංකය/ලකුණ ඉවත් කිරීම
+// අවසාන අංකය මකා දැමීම
 function deleteLast() {
     display.value = display.value.slice(0, -1);
 }
 
-// ගණනය කිරීම සිදුකර උත්තරය පෙන්වීම
+// ගණනය කිරීම
 function calculateResult() {
     try {
         if (display.value !== '') {
