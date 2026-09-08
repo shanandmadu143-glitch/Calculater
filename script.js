@@ -15,7 +15,7 @@ function deleteLast() {
     display.value = display.value.slice(0, -1);
 }
 
-// උත්තරය တွက်တွက် කිරීම
+// ගණනය කිරීම සිදුකර උත්තරය පෙන්වීම
 function calculateResult() {
     try {
         if (display.value !== '') {
@@ -25,4 +25,3 @@ function calculateResult() {
         display.value = 'Error';
     }
 }
-
