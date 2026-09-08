@@ -16,7 +16,7 @@ body {
 
 .calculator-card {
     position: relative;
-    background: rgba(20, 20, 20, 0.9);
+    background: rgba(20, 20, 20, 0.92);
     backdrop-filter: blur(15px);
     border: 3px solid #ffb703;
     padding: 25px 20px;
@@ -97,7 +97,7 @@ body {
     box-shadow: 0 2px 0 #145523;
 }
 
-/* Display Screen */
+/* Screen Display */
 .display-container {
     margin-bottom: 18px;
 }
