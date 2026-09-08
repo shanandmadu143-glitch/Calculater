@@ -2,8 +2,9 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -17,11 +18,11 @@ body {
 
 .calculator-card {
     position: relative;
-    background: rgba(20, 20, 20, 0.95);
+    background: rgba(20, 20, 25, 0.95);
     backdrop-filter: blur(15px);
-    border: 3px solid #ffb703;
-    padding: 22px 18px;
-    border-radius: 25px;
+    border: 2px solid #ffb703;
+    padding: 20px 16px;
+    border-radius: 22px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
                 inset 0 1px 2px rgba(255, 255, 255, 0.2);
     width: 100%;
@@ -29,17 +30,16 @@ body {
 }
 
 .datetime-container {
-    text-align: center;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 8px 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 183, 3, 0.3);
-    margin-bottom: 12px;
-    color: #ffb703;
-    font-size: 13px;
-    font-weight: 600;
     display: flex;
     justify-content: space-between;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 183, 3, 0.3);
+    color: #ffb703;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
 }
 
 .app-title {
@@ -60,7 +60,6 @@ body {
     100% { background-position: 200% center; }
 }
 
-/* Note Input & Save */
 .note-container {
     display: flex;
     gap: 8px;
@@ -92,7 +91,7 @@ body {
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 4px 0 #145523;
-    transition: all 0.1s ease;
+    transition: transform 0.1s ease;
 }
 
 #save-btn:active {
@@ -100,14 +99,13 @@ body {
     box-shadow: 0 2px 0 #145523;
 }
 
-/* Display Screen */
 .display-container {
     margin-bottom: 15px;
 }
 
 #display {
     width: 100%;
-    height: 58px;
+    height: 56px;
     background-color: #0a0a0a;
     border: 2px solid #333;
     border-radius: 12px;
@@ -119,7 +117,6 @@ body {
     user-select: text;
 }
 
-/* Keypad Grid */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -136,7 +133,7 @@ body {
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 5px 0 #0d0d0d, 0 6px 8px rgba(0,0,0,0.5);
-    transition: all 0.1s ease;
+    transition: transform 0.1s ease;
     touch-action: manipulation;
 }
 
@@ -169,7 +166,6 @@ body {
     grid-column: span 2;
 }
 
-/* Bottom Extra Controls */
 .extra-controls {
     display: flex;
     gap: 10px;
@@ -199,19 +195,11 @@ body {
     box-shadow: 0 4px 0 #804600;
 }
 
-.download-btn:hover {
-    background: linear-gradient(145deg, #ffa024, #e67e00);
-}
-
-/* Modal Popup Overlays */
 .modal-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.75);
-    border-radius: 22px;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -222,8 +210,8 @@ body {
 .modal-content {
     background: #141414;
     border: 2px solid #ffb703;
-    border-radius: 18px;
-    padding: 15px;
+    border-radius: 16px;
+    padding: 14px;
     width: 100%;
     height: 100%;
     display: flex;
@@ -242,7 +230,7 @@ body {
     color: #ffb703;
     margin-bottom: 10px;
     border-bottom: 1px solid #333;
-    padding-bottom: 5px;
+    padding-bottom: 6px;
 }
 
 .close-btn {
@@ -293,19 +281,15 @@ body {
     margin-top: 2px;
 }
 
-.saved-item-actions {
-    display: flex;
-    gap: 6px;
-}
-
 .action-btn {
     border: none;
     padding: 6px 8px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     color: white;
+    margin-left: 4px;
 }
 
 .edit-btn { background: #ff9f1c; }
@@ -322,7 +306,6 @@ body {
     font-weight: bold;
 }
 
-/* Edit Modal Box Specifics */
 .edit-modal-box {
     height: auto;
     max-height: 90%;
@@ -374,7 +357,6 @@ body {
     font-weight: bold;
 }
 
-/* Toast Message */
 .toast {
     position: absolute;
     top: 50%;
@@ -382,8 +364,8 @@ body {
     transform: translate(-50%, -50%);
     background: linear-gradient(145deg, #28a745, #1e7e34);
     color: white;
-    padding: 14px 18px;
-    border-radius: 12px;
+    padding: 12px 18px;
+    border-radius: 10px;
     font-weight: bold;
     font-size: 13px;
     text-align: center;
