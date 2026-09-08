@@ -9,7 +9,7 @@
 <body>
 
     <div class="calculator-card">
-        <!-- Date & Time Header -->
+        <!-- Live Date & Time Header -->
         <div class="datetime-container">
             <div id="current-date">--/--/----</div>
             <div id="current-time">00:00:00 AM</div>
@@ -18,10 +18,10 @@
         <!-- Animated Gradient Title -->
         <h1 class="app-title">Vasana Calculator</h1>
 
-        <!-- Note/Description Field & Save Button -->
+        <!-- Note Input & Save Button -->
         <div class="note-container">
-            <input type="text" id="calc-note" placeholder="ගණනය කිරීමේ විස්තරය (උදා: බඩු ලැයිස්තුව)...">
-            <button id="save-btn" onclick="saveCalculation()">
+            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)...">
+            <button id="save-btn" type="button">
                 <span>💾 Save</span>
             </button>
         </div>
@@ -57,25 +57,31 @@
             <button class="btn" onclick="appendValue('.')">.</button>
         </div>
 
-        <!-- Bottom Controls: View Saved & XML Download -->
+        <!-- Bottom Controls -->
         <div class="extra-controls">
-            <button class="btn-extra" onclick="toggleSavedData()">👁️ View Saved</button>
-            <button class="btn-extra download-btn" onclick="downloadXML()">📥 Download XML</button>
+            <button id="view-btn" class="btn-extra" type="button">👁️ View Saved</button>
+            <button id="download-btn" class="btn-extra download-btn" type="button">📥 Download XML</button>
         </div>
 
-        <!-- Saved History Modal / List -->
+        <!-- Saved Records Modal -->
         <div id="saved-modal" class="saved-modal hidden">
             <div class="saved-header">
                 <h3>Saved Records</h3>
-                <button class="close-btn" onclick="toggleSavedData()">✕</button>
+                <button id="close-modal-btn" class="close-btn" type="button">✕</button>
             </div>
             <div id="saved-list" class="saved-list">
-                <!-- Saved items render here -->
+                <!-- Saved records load here -->
             </div>
-            <button class="clear-history-btn" onclick="clearAllHistory()">Clear All</button>
+            <button id="clear-all-btn" class="clear-history-btn" type="button">Clear All</button>
+        </div>
+
+        <!-- Thank You Toast Notification Overlay -->
+        <div id="toast-message" class="toast hidden">
+            🎉 Thank You! Data Saved Successfully!
         </div>
     </div>
 
     <script src="script.js"></script>
 </body>
 </html>
+
