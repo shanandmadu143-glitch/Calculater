@@ -58,7 +58,6 @@ body {
     100% { background-position: 200% center; }
 }
 
-/* Input & Save Container */
 .note-container {
     display: flex;
     gap: 8px;
@@ -97,7 +96,6 @@ body {
     box-shadow: 0 2px 0 #145523;
 }
 
-/* Screen Display */
 .display-container {
     margin-bottom: 18px;
 }
@@ -115,7 +113,6 @@ body {
     box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.9);
 }
 
-/* 3D Grid Buttons */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -164,7 +161,6 @@ body {
     grid-column: span 2;
 }
 
-/* Extra Bottom Buttons */
 .extra-controls {
     display: flex;
     gap: 10px;
@@ -198,7 +194,6 @@ body {
     background: linear-gradient(145deg, #ffa024, #e67e00);
 }
 
-/* Saved Records Modal */
 .saved-modal {
     position: absolute;
     top: 15px;
@@ -241,27 +236,59 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .saved-item {
     background: #222;
-    padding: 8px 12px;
+    padding: 10px 12px;
     border-radius: 8px;
-    border-left: 3px solid #2ec4b6;
+    border-left: 4px solid #2ec4b6;
     color: #ddd;
     font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.saved-item-info {
+    flex: 1;
 }
 
 .saved-item-title {
     font-weight: bold;
     color: #ff8c00;
+    font-size: 13px;
 }
 
 .saved-item-result {
     font-size: 14px;
     color: #00ff66;
     font-weight: bold;
+    margin-top: 2px;
+}
+
+.saved-item-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.action-btn {
+    border: none;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+.edit-btn {
+    background: #ff9f1c;
+}
+
+.delete-btn {
+    background: #e63946;
 }
 
 .clear-history-btn {
@@ -269,12 +296,62 @@ body {
     background: #e63946;
     border: none;
     color: white;
-    padding: 6px;
+    padding: 8px;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: bold;
 }
 
-/* Thank You Toast Notification */
+.edit-modal-style {
+    z-index: 150;
+    justify-content: space-between;
+}
+
+.edit-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+    color: #ccc;
+    font-size: 13px;
+}
+
+.edit-inputs input {
+    background: #222;
+    border: 1px solid #444;
+    padding: 8px;
+    border-radius: 6px;
+    color: #fff;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.save-edit-btn {
+    flex: 1;
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.cancel-btn {
+    flex: 1;
+    background: #555;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
 .toast {
     position: absolute;
     top: 50%;
@@ -290,10 +367,4 @@ body {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
     border: 2px solid #00ff66;
     z-index: 200;
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translate(-50%, -60%); }
-    to { opacity: 1; transform: translate(-50%, -50%); }
 }
