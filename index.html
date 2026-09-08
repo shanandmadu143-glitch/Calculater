@@ -2,31 +2,29 @@
 <html lang="si">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vasana Calculator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="calculator-card">
-        <!-- Live Date & Time Header -->
+        <!-- Live Date & Time -->
         <div class="datetime-container">
-            <div id="current-date">----/--/--</div>
-            <div id="current-time">00:00:00 AM</div>
+            <span id="current-date">----/--/--</span>
+            <span id="current-time">00:00:00 AM</span>
         </div>
 
-        <!-- Animated Title -->
+        <!-- Title -->
         <h1 class="app-title">Vasana Calculator</h1>
 
         <!-- Note Input & Save Button -->
         <div class="note-container">
             <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." maxlength="50" autocomplete="off">
-            <button id="save-btn" type="button" title="Save Calculation">
-                <span>💾 Save</span>
-            </button>
+            <button id="save-btn" type="button" title="Save Calculation">💾 Save</button>
         </div>
 
-        <!-- Screen/Display -->
+        <!-- Display Screen -->
         <div class="display-container">
             <input type="text" id="display" placeholder="0" readonly autocomplete="off">
         </div>
@@ -40,7 +38,6 @@
 
             <button type="button" class="btn" data-val="7">7</button>
             <button type="button" class="btn" data-val="8">8</button>
-
             <button type="button" class="btn" data-val="9">9</button>
             <button type="button" class="btn btn-operator" data-val="-">-</button>
 
@@ -58,27 +55,25 @@
             <button type="button" class="btn" data-val=".">.</button>
         </div>
 
-        <!-- Extra Bottom Controls -->
+        <!-- Extra Controls -->
         <div class="extra-controls">
             <button id="view-btn" class="btn-extra" type="button">👁️ View Saved</button>
             <button id="download-btn" class="btn-extra download-btn" type="button">📥 Download XML</button>
         </div>
 
-        <!-- Saved History Modal -->
+        <!-- Saved History Popup Modal -->
         <div id="saved-modal" class="modal-overlay hidden">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>📜 Saved History</h3>
                     <button id="close-modal-btn" class="close-btn" type="button">✕</button>
                 </div>
-                <div id="saved-list" class="saved-list">
-                    <!-- Dynamic Saved Items -->
-                </div>
+                <div id="saved-list" class="saved-list"></div>
                 <button id="clear-all-btn" class="clear-history-btn" type="button">Clear All History</button>
             </div>
         </div>
 
-        <!-- Edit Item Modal -->
+        <!-- Edit Record Popup Modal -->
         <div id="edit-modal" class="modal-overlay hidden">
             <div class="modal-content edit-modal-box">
                 <div class="modal-header">
@@ -100,7 +95,7 @@
 
         <!-- Toast Notification Overlay -->
         <div id="toast-message" class="toast hidden">
-            🎉 Thank You! Data Saved Successfully!
+            🎉 Data Saved Successfully!
         </div>
     </div>
 
