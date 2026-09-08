@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculator</title>
+    <title>Vasana Calculator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="calculator">
+        <h2 class="app-title">Vasana Calculator</h2>
+
         <!-- Screen/Display -->
         <input type="text" id="display" readonly>
 
@@ -25,6 +27,7 @@
             <button class="operator" onclick="appendValue('-')">-</button>
 
             <button onclick="appendValue('4')">4</button>
+
             <button onclick="appendValue('5')">5</button>
             <button onclick="appendValue('6')">6</button>
             <button class="operator" onclick="appendValue('+')">+</button>
@@ -35,6 +38,7 @@
             <button class="equal" onclick="calculateResult()">=</button>
 
             <button class="zero" onclick="appendValue('0')">0</button>
+
             <button onclick="appendValue('.')">.</button>
         </div>
     </div>
@@ -42,4 +46,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
