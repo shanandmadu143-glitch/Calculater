@@ -11,7 +11,7 @@
     <div class="calculator-card">
         <!-- Live Date & Time Header -->
         <div class="datetime-container">
-            <div id="current-date">--/--/----</div>
+            <div id="current-date">----/--/--</div>
             <div id="current-time">00:00:00 AM</div>
         </div>
 
@@ -20,80 +20,85 @@
 
         <!-- Note Input & Save Button -->
         <div class="note-container">
-            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)...">
-            <button id="save-btn" type="button">
+            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." maxlength="50" autocomplete="off">
+            <button id="save-btn" type="button" title="Save Calculation">
                 <span>💾 Save</span>
             </button>
         </div>
 
-        <!-- Display Screen -->
+        <!-- Screen/Display -->
         <div class="display-container">
-            <input type="text" id="display" placeholder="0" readonly>
+            <input type="text" id="display" placeholder="0" readonly autocomplete="off">
         </div>
 
         <!-- Keypad Buttons -->
         <div class="buttons">
-            <button class="btn btn-action" data-action="clear">C</button>
-            <button class="btn btn-action" data-action="delete">DEL</button>
-            <button class="btn btn-operator" data-val="/">÷</button>
-            <button class="btn btn-operator" data-val="*">×</button>
+            <button type="button" class="btn btn-action" data-action="clear">C</button>
+            <button type="button" class="btn btn-action" data-action="delete">DEL</button>
+            <button type="button" class="btn btn-operator" data-val="/">÷</button>
+            <button type="button" class="btn btn-operator" data-val="*">×</button>
 
-            <button class="btn" data-val="7">7</button>
-            <button class="btn" data-val="8">8</button>
-            <button class="btn" data-val="9">9</button>
-            <button class="btn btn-operator" data-val="-">-</button>
+            <button type="button" class="btn" data-val="7">7</button>
+            <button type="button" class="btn" data-val="8">8</button>
 
-            <button class="btn" data-val="4">4</button>
-            <button class="btn" data-val="5">5</button>
-            <button class="btn" data-val="6">6</button>
-            <button class="btn btn-operator" data-val="+">+</button>
+            <button type="button" class="btn" data-val="9">9</button>
+            <button type="button" class="btn btn-operator" data-val="-">-</button>
 
-            <button class="btn" data-val="1">1</button>
-            <button class="btn" data-val="2">2</button>
-            <button class="btn" data-val="3">3</button>
-            <button class="btn btn-equal" data-action="calculate">=</button>
+            <button type="button" class="btn" data-val="4">4</button>
+            <button type="button" class="btn" data-val="5">5</button>
+            <button type="button" class="btn" data-val="6">6</button>
+            <button type="button" class="btn btn-operator" data-val="+">+</button>
 
-            <button class="btn btn-zero" data-val="0">0</button>
-            <button class="btn" data-val=".">.</button>
+            <button type="button" class="btn" data-val="1">1</button>
+            <button type="button" class="btn" data-val="2">2</button>
+            <button type="button" class="btn" data-val="3">3</button>
+            <button type="button" class="btn btn-equal" data-action="calculate">=</button>
+
+            <button type="button" class="btn btn-zero" data-val="0">0</button>
+            <button type="button" class="btn" data-val=".">.</button>
         </div>
 
-        <!-- Bottom Controls -->
+        <!-- Extra Bottom Controls -->
         <div class="extra-controls">
             <button id="view-btn" class="btn-extra" type="button">👁️ View Saved</button>
             <button id="download-btn" class="btn-extra download-btn" type="button">📥 Download XML</button>
         </div>
 
-        <!-- Saved History Popup Modal -->
-        <div id="saved-modal" class="saved-modal hidden">
-            <div class="saved-header">
-                <h3>📜 Saved History</h3>
-                <button id="close-modal-btn" class="close-btn" type="button">✕</button>
-            </div>
-            <div id="saved-list" class="saved-list">
-                <!-- Records render here -->
-            </div>
-            <button id="clear-all-btn" class="clear-history-btn" type="button">Clear All History</button>
-        </div>
-
-        <!-- Edit Modal Popup -->
-        <div id="edit-modal" class="saved-modal edit-modal-style hidden">
-            <div class="saved-header">
-                <h3>✏️ Edit Record</h3>
-                <button id="close-edit-btn" class="close-btn" type="button">✕</button>
-            </div>
-            <div class="edit-inputs">
-                <label>විස්තරය / නම:</label>
-                <input type="text" id="edit-note" placeholder="විස්තරය">
-                <label>ගණන / අගය:</label>
-                <input type="text" id="edit-expression" placeholder="අගය">
-            </div>
-            <div class="modal-actions">
-                <button id="save-edit-btn" class="save-edit-btn" type="button">Save Changes</button>
-                <button id="cancel-edit-btn" class="cancel-btn" type="button">Cancel</button>
+        <!-- Saved History Modal -->
+        <div id="saved-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📜 Saved History</h3>
+                    <button id="close-modal-btn" class="close-btn" type="button">✕</button>
+                </div>
+                <div id="saved-list" class="saved-list">
+                    <!-- Dynamic Saved Items -->
+                </div>
+                <button id="clear-all-btn" class="clear-history-btn" type="button">Clear All History</button>
             </div>
         </div>
 
-        <!-- Thank You Toast Overlay -->
+        <!-- Edit Item Modal -->
+        <div id="edit-modal" class="modal-overlay hidden">
+            <div class="modal-content edit-modal-box">
+                <div class="modal-header">
+                    <h3>✏️ Edit Record</h3>
+                    <button id="close-edit-btn" class="close-btn" type="button">✕</button>
+                </div>
+                <div class="edit-inputs">
+                    <label for="edit-note">විස්තරය / නම:</label>
+                    <input type="text" id="edit-note" placeholder="විස්තරය" maxlength="50" autocomplete="off">
+                    <label for="edit-expression">ගණන / අගය:</label>
+                    <input type="text" id="edit-expression" placeholder="අගය" autocomplete="off">
+                </div>
+                <div class="modal-actions">
+                    <button id="save-edit-btn" class="save-edit-btn" type="button">Save Changes</button>
+                    <button id="cancel-edit-btn" class="cancel-btn" type="button">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification Overlay -->
         <div id="toast-message" class="toast hidden">
             🎉 Thank You! Data Saved Successfully!
         </div>
