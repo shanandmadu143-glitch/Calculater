@@ -3,6 +3,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
 }
 
 body {
@@ -11,19 +12,20 @@ body {
     align-items: center;
     min-height: 100vh;
     background: linear-gradient(135deg, #0d0106 0%, #800000 45%, #ff8c00 80%, #006400 100%);
-    padding: 20px;
+    padding: 15px;
 }
 
 .calculator-card {
     position: relative;
-    background: rgba(20, 20, 20, 0.92);
+    background: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(15px);
     border: 3px solid #ffb703;
-    padding: 25px 20px;
+    padding: 22px 18px;
     border-radius: 25px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
                 inset 0 1px 2px rgba(255, 255, 255, 0.2);
-    width: 360px;
+    width: 100%;
+    max-width: 360px;
 }
 
 .datetime-container {
@@ -32,7 +34,7 @@ body {
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px solid rgba(255, 183, 3, 0.3);
-    margin-bottom: 15px;
+    margin-bottom: 12px;
     color: #ffb703;
     font-size: 13px;
     font-weight: 600;
@@ -42,9 +44,9 @@ body {
 
 .app-title {
     text-align: center;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 800;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
     background: linear-gradient(90deg, #ff8c00, #2ec4b6, #ff8c00);
     background-size: 200% auto;
     -webkit-background-clip: text;
@@ -58,6 +60,7 @@ body {
     100% { background-position: 200% center; }
 }
 
+/* Note Input & Save */
 .note-container {
     display: flex;
     gap: 8px;
@@ -72,6 +75,7 @@ body {
     color: #fff;
     padding: 8px 12px;
     font-size: 13px;
+    user-select: text;
 }
 
 #calc-note:focus {
@@ -96,23 +100,26 @@ body {
     box-shadow: 0 2px 0 #145523;
 }
 
+/* Display Screen */
 .display-container {
-    margin-bottom: 18px;
+    margin-bottom: 15px;
 }
 
 #display {
     width: 100%;
-    height: 60px;
+    height: 58px;
     background-color: #0a0a0a;
     border: 2px solid #333;
     border-radius: 12px;
     color: #00ff66;
-    font-size: 30px;
+    font-size: 28px;
     text-align: right;
     padding: 10px 15px;
     box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.9);
+    user-select: text;
 }
 
+/* Keypad Grid */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -120,7 +127,7 @@ body {
 }
 
 .btn {
-    height: 52px;
+    height: 50px;
     border: none;
     border-radius: 10px;
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
@@ -130,6 +137,7 @@ body {
     cursor: pointer;
     box-shadow: 0 5px 0 #0d0d0d, 0 6px 8px rgba(0,0,0,0.5);
     transition: all 0.1s ease;
+    touch-action: manipulation;
 }
 
 .btn:active {
@@ -153,7 +161,7 @@ body {
     background: linear-gradient(145deg, #2ec4b6, #0f9f92);
     color: #fff;
     grid-row: span 2;
-    height: 114px;
+    height: 110px;
     box-shadow: 0 5px 0 #08665e;
 }
 
@@ -161,6 +169,7 @@ body {
     grid-column: span 2;
 }
 
+/* Bottom Extra Controls */
 .extra-controls {
     display: flex;
     gap: 10px;
@@ -194,26 +203,39 @@ body {
     background: linear-gradient(145deg, #ffa024, #e67e00);
 }
 
-.saved-modal {
+/* Modal Popup Overlays */
+.modal-overlay {
     position: absolute;
-    top: 15px;
-    left: 15px;
-    right: 15px;
-    bottom: 15px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 12px;
+}
+
+.modal-content {
     background: #141414;
     border: 2px solid #ffb703;
     border-radius: 18px;
     padding: 15px;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.9);
 }
 
 .hidden {
     display: none !important;
 }
 
-.saved-header {
+.modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -227,8 +249,9 @@ body {
     background: none;
     border: none;
     color: #ff4d4d;
-    font-size: 18px;
+    font-size: 20px;
     cursor: pointer;
+    padding: 0 5px;
 }
 
 .saved-list {
@@ -236,7 +259,8 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    padding-right: 2px;
 }
 
 .saved-item {
@@ -253,6 +277,7 @@ body {
 
 .saved-item-info {
     flex: 1;
+    cursor: pointer;
 }
 
 .saved-item-title {
@@ -283,13 +308,8 @@ body {
     color: white;
 }
 
-.edit-btn {
-    background: #ff9f1c;
-}
-
-.delete-btn {
-    background: #e63946;
-}
+.edit-btn { background: #ff9f1c; }
+.delete-btn { background: #e63946; }
 
 .clear-history-btn {
     margin-top: 10px;
@@ -302,16 +322,17 @@ body {
     font-weight: bold;
 }
 
-.edit-modal-style {
-    z-index: 150;
-    justify-content: space-between;
+/* Edit Modal Box Specifics */
+.edit-modal-box {
+    height: auto;
+    max-height: 90%;
 }
 
 .edit-inputs {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-top: 15px;
+    margin-top: 10px;
     color: #ccc;
     font-size: 13px;
 }
@@ -322,6 +343,7 @@ body {
     padding: 8px;
     border-radius: 6px;
     color: #fff;
+    user-select: text;
 }
 
 .modal-actions {
@@ -352,6 +374,7 @@ body {
     font-weight: bold;
 }
 
+/* Toast Message */
 .toast {
     position: absolute;
     top: 50%;
@@ -359,12 +382,13 @@ body {
     transform: translate(-50%, -50%);
     background: linear-gradient(145deg, #28a745, #1e7e34);
     color: white;
-    padding: 15px 20px;
+    padding: 14px 18px;
     border-radius: 12px;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 13px;
     text-align: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
     border: 2px solid #00ff66;
     z-index: 200;
+    width: 80%;
 }
