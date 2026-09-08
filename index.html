@@ -15,67 +15,85 @@
             <div id="current-time">00:00:00 AM</div>
         </div>
 
-        <!-- Animated Gradient Title -->
+        <!-- Animated Title -->
         <h1 class="app-title">Vasana Calculator</h1>
 
         <!-- Note Input & Save Button -->
         <div class="note-container">
             <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)...">
-            <button id="save-btn" type="button" onclick="saveCalculation()">
+            <button id="save-btn" type="button">
                 <span>💾 Save</span>
             </button>
         </div>
 
-        <!-- Screen/Display -->
+        <!-- Display Screen -->
         <div class="display-container">
             <input type="text" id="display" placeholder="0" readonly>
         </div>
 
-        <!-- 3D Keypad Buttons -->
+        <!-- Keypad Buttons -->
         <div class="buttons">
-            <button class="btn btn-action" type="button" onclick="clearDisplay()">C</button>
-            <button class="btn btn-action" type="button" onclick="deleteLast()">DEL</button>
-            <button class="btn btn-operator" type="button" onclick="appendValue('/')">÷</button>
-            <button class="btn btn-operator" type="button" onclick="appendValue('*')">×</button>
+            <button class="btn btn-action" data-action="clear">C</button>
+            <button class="btn btn-action" data-action="delete">DEL</button>
+            <button class="btn btn-operator" data-val="/">÷</button>
+            <button class="btn btn-operator" data-val="*">×</button>
 
-            <button class="btn" type="button" onclick="appendValue('7')">7</button>
-            <button class="btn" type="button" onclick="appendValue('8')">8</button>
-            <button class="btn" type="button" onclick="appendValue('9')">9</button>
-            <button class="btn btn-operator" type="button" onclick="appendValue('-')">-</button>
+            <button class="btn" data-val="7">7</button>
+            <button class="btn" data-val="8">8</button>
+            <button class="btn" data-val="9">9</button>
+            <button class="btn btn-operator" data-val="-">-</button>
 
-            <button class="btn" type="button" onclick="appendValue('4')">4</button>
-            <button class="btn" type="button" onclick="appendValue('5')">5</button>
-            <button class="btn" type="button" onclick="appendValue('6')">6</button>
-            <button class="btn btn-operator" type="button" onclick="appendValue('+')">+</button>
+            <button class="btn" data-val="4">4</button>
+            <button class="btn" data-val="5">5</button>
+            <button class="btn" data-val="6">6</button>
+            <button class="btn btn-operator" data-val="+">+</button>
 
-            <button class="btn" type="button" onclick="appendValue('1')">1</button>
-            <button class="btn" type="button" onclick="appendValue('2')">2</button>
-            <button class="btn" type="button" onclick="appendValue('3')">3</button>
-            <button class="btn btn-equal" type="button" onclick="calculateResult()">=</button>
+            <button class="btn" data-val="1">1</button>
+            <button class="btn" data-val="2">2</button>
+            <button class="btn" data-val="3">3</button>
+            <button class="btn btn-equal" data-action="calculate">=</button>
 
-            <button class="btn btn-zero" type="button" onclick="appendValue('0')">0</button>
-            <button class="btn" type="button" onclick="appendValue('.')">.</button>
+            <button class="btn btn-zero" data-val="0">0</button>
+            <button class="btn" data-val=".">.</button>
         </div>
 
         <!-- Bottom Controls -->
         <div class="extra-controls">
-            <button class="btn-extra" type="button" onclick="openSavedModal()">👁️ View Saved</button>
-            <button class="btn-extra download-btn" type="button" onclick="downloadXML()">📥 Download XML</button>
+            <button id="view-btn" class="btn-extra" type="button">👁️ View Saved</button>
+            <button id="download-btn" class="btn-extra download-btn" type="button">📥 Download XML</button>
         </div>
 
-        <!-- Saved Records Modal -->
+        <!-- Saved History Popup Modal -->
         <div id="saved-modal" class="saved-modal hidden">
             <div class="saved-header">
-                <h3>Saved Records</h3>
-                <button class="close-btn" type="button" onclick="closeSavedModal()">✕</button>
+                <h3>📜 Saved History</h3>
+                <button id="close-modal-btn" class="close-btn" type="button">✕</button>
             </div>
             <div id="saved-list" class="saved-list">
-                <!-- Saved records dynamically rendered -->
+                <!-- Records render here -->
             </div>
-            <button class="clear-history-btn" type="button" onclick="clearAllHistory()">Clear All</button>
+            <button id="clear-all-btn" class="clear-history-btn" type="button">Clear All History</button>
         </div>
 
-        <!-- Thank You Toast Notification Overlay -->
+        <!-- Edit Modal Popup -->
+        <div id="edit-modal" class="saved-modal edit-modal-style hidden">
+            <div class="saved-header">
+                <h3>✏️ Edit Record</h3>
+                <button id="close-edit-btn" class="close-btn" type="button">✕</button>
+            </div>
+            <div class="edit-inputs">
+                <label>විස්තරය / නම:</label>
+                <input type="text" id="edit-note" placeholder="විස්තරය">
+                <label>ගණන / අගය:</label>
+                <input type="text" id="edit-expression" placeholder="අගය">
+            </div>
+            <div class="modal-actions">
+                <button id="save-edit-btn" class="save-edit-btn" type="button">Save Changes</button>
+                <button id="cancel-edit-btn" class="cancel-btn" type="button">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Thank You Toast Overlay -->
         <div id="toast-message" class="toast hidden">
             🎉 Thank You! Data Saved Successfully!
         </div>
