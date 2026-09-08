@@ -2,91 +2,146 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
 }
 
+/* Background inspired by Sri Lanka National Flag Colors */
 body {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #121212;
+    background: linear-gradient(135deg, #0d0106 0%, #800000 45%, #ff8c00 80%, #006400 100%);
+    padding: 20px;
 }
 
-.calculator {
-    background-color: #1e1e1e;
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-    width: 320px;
+/* Calculator Outer Container - 3D Look */
+.calculator-card {
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(15px);
+    border: 3px solid #ffb703;
+    padding: 30px 25px;
+    border-radius: 25px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
+                inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    width: 360px;
 }
 
-.app-title {
-    color: #ffffff;
+/* Date and Time Styling */
+.datetime-container {
     text-align: center;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 183, 3, 0.3);
     margin-bottom: 15px;
-    font-size: 22px;
+    color: #ffb703;
+    font-size: 13px;
     font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    letter-spacing: 0.5px;
+}
+
+/* Vasana Calculator Title with Orange & Green Gradient Effect */
+.app-title {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 20px;
+    background: linear-gradient(90deg, #ff8c00, #2ec4b6, #ff8c00);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textGlow 3s linear infinite;
+    text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+@keyframes textGlow {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+/* Screen Display */
+.display-container {
+    margin-bottom: 25px;
 }
 
 #display {
     width: 100%;
-    height: 60px;
-    background-color: #2d2d2d;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 28px;
+    height: 65px;
+    background-color: #0a0a0a;
+    border: 2px solid #333;
+    border-radius: 12px;
+    color: #00ff66;
+    font-size: 32px;
     text-align: right;
     padding: 10px 15px;
-    margin-bottom: 20px;
+    box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.9);
 }
 
+/* Buttons Grid Layout */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 12px;
 }
 
-button {
+/* 3D Button Base Design */
+.btn {
     height: 55px;
     border: none;
-    border-radius: 8px;
-    background-color: #333;
-    color: #fff;
+    border-radius: 12px;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    color: #ffffff;
     font-size: 20px;
     font-weight: bold;
     cursor: pointer;
-    transition: 0.2s;
+    box-shadow: 0 6px 0 #0d0d0d, 0 8px 10px rgba(0,0,0,0.5);
+    transition: all 0.1s ease;
 }
 
-button:hover {
-    background-color: #444;
+.btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #0d0d0d, 0 4px 5px rgba(0,0,0,0.5);
 }
 
-button:active {
-    transform: scale(0.95);
+/* Operator Buttons (Orange Style) */
+.btn-operator {
+    background: linear-gradient(145deg, #ff9f1c, #d47a00);
+    color: #fff;
+    box-shadow: 0 6px 0 #995800, 0 8px 10px rgba(0,0,0,0.4);
 }
 
-.operator {
-    background-color: #ff9500;
+.btn-operator:active {
+    box-shadow: 0 2px 0 #995800;
 }
 
-.operator:hover {
-    background-color: #e08300;
+/* Action Buttons (C, DEL) */
+.btn-action {
+    background: linear-gradient(145deg, #e63946, #b01825);
+    color: #fff;
+    box-shadow: 0 6px 0 #780d16, 0 8px 10px rgba(0,0,0,0.4);
 }
 
-.equal {
-    background-color: #28a745;
+.btn-action:active {
+    box-shadow: 0 2px 0 #780d16;
+}
+
+/* Equal Button (Green Style - 3D Height) */
+.btn-equal {
+    background: linear-gradient(145deg, #2ec4b6, #0f9f92);
+    color: #fff;
     grid-row: span 2;
-    height: 120px;
+    height: 122px;
+    box-shadow: 0 6px 0 #08665e, 0 8px 10px rgba(0,0,0,0.4);
 }
 
-.equal:hover {
-    background-color: #218838;
+.btn-equal:active {
+    box-shadow: 0 2px 0 #08665e;
 }
 
-.zero {
+.btn-zero {
     grid-column: span 2;
 }
