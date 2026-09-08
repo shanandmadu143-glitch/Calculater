@@ -16,7 +16,7 @@ body {
 
 .calculator-card {
     position: relative;
-    background: rgba(20, 20, 20, 0.88);
+    background: rgba(20, 20, 20, 0.9);
     backdrop-filter: blur(15px);
     border: 3px solid #ffb703;
     padding: 25px 20px;
@@ -58,7 +58,7 @@ body {
     100% { background-position: 200% center; }
 }
 
-/* Note Input & Save Button */
+/* Input & Save Container */
 .note-container {
     display: flex;
     gap: 8px;
@@ -89,7 +89,7 @@ body {
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 4px 0 #145523;
-    transition: all 0.2s ease;
+    transition: all 0.1s ease;
 }
 
 #save-btn:active {
@@ -97,18 +97,7 @@ body {
     box-shadow: 0 2px 0 #145523;
 }
 
-/* Save Animation Effect */
-.save-success {
-    animation: pulseGlow 0.6s ease-in-out;
-}
-
-@keyframes pulseGlow {
-    0% { transform: scale(1); box-shadow: 0 0 0px #28a745; }
-    50% { transform: scale(1.08); box-shadow: 0 0 20px #28a745; }
-    100% { transform: scale(1); box-shadow: 0 0 0px #28a745; }
-}
-
-/* Screen Display */
+/* Display Screen */
 .display-container {
     margin-bottom: 18px;
 }
@@ -126,7 +115,7 @@ body {
     box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.9);
 }
 
-/* 3D Buttons */
+/* 3D Grid Buttons */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -209,7 +198,7 @@ body {
     background: linear-gradient(145deg, #ffa024, #e67e00);
 }
 
-/* Modal View */
+/* Saved Records Modal */
 .saved-modal {
     position: absolute;
     top: 15px;
@@ -226,7 +215,7 @@ body {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 .saved-header {
@@ -283,4 +272,28 @@ body {
     padding: 6px;
     border-radius: 6px;
     cursor: pointer;
+}
+
+/* Thank You Toast Notification */
+.toast {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(145deg, #28a745, #1e7e34);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 14px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ff66;
+    z-index: 200;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -60%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
 }
