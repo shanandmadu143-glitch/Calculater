@@ -2,10 +2,9 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Background inspired by Sri Lanka National Flag Colors */
 body {
     display: flex;
     justify-content: center;
@@ -15,22 +14,21 @@ body {
     padding: 20px;
 }
 
-/* Calculator Outer Container - 3D Look */
 .calculator-card {
-    background: rgba(20, 20, 20, 0.85);
+    position: relative;
+    background: rgba(20, 20, 20, 0.88);
     backdrop-filter: blur(15px);
     border: 3px solid #ffb703;
-    padding: 30px 25px;
+    padding: 25px 20px;
     border-radius: 25px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
                 inset 0 1px 2px rgba(255, 255, 255, 0.2);
     width: 360px;
 }
 
-/* Date and Time Styling */
 .datetime-container {
     text-align: center;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px solid rgba(255, 183, 3, 0.3);
@@ -40,22 +38,19 @@ body {
     font-weight: 600;
     display: flex;
     justify-content: space-between;
-    letter-spacing: 0.5px;
 }
 
-/* Vasana Calculator Title with Orange & Green Gradient Effect */
 .app-title {
     text-align: center;
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 800;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     background: linear-gradient(90deg, #ff8c00, #2ec4b6, #ff8c00);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: textGlow 3s linear infinite;
     text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
 @keyframes textGlow {
@@ -63,85 +58,229 @@ body {
     100% { background-position: 200% center; }
 }
 
+/* Note Input & Save Button */
+.note-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+#calc-note {
+    flex: 1;
+    background: #111;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+#calc-note:focus {
+    outline: none;
+    border-color: #ff9f1c;
+}
+
+#save-btn {
+    background: linear-gradient(145deg, #28a745, #1e7e34);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #145523;
+    transition: all 0.2s ease;
+}
+
+#save-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #145523;
+}
+
+/* Save Animation Effect */
+.save-success {
+    animation: pulseGlow 0.6s ease-in-out;
+}
+
+@keyframes pulseGlow {
+    0% { transform: scale(1); box-shadow: 0 0 0px #28a745; }
+    50% { transform: scale(1.08); box-shadow: 0 0 20px #28a745; }
+    100% { transform: scale(1); box-shadow: 0 0 0px #28a745; }
+}
+
 /* Screen Display */
 .display-container {
-    margin-bottom: 25px;
+    margin-bottom: 18px;
 }
 
 #display {
     width: 100%;
-    height: 65px;
+    height: 60px;
     background-color: #0a0a0a;
     border: 2px solid #333;
     border-radius: 12px;
     color: #00ff66;
-    font-size: 32px;
+    font-size: 30px;
     text-align: right;
     padding: 10px 15px;
     box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.9);
 }
 
-/* Buttons Grid Layout */
+/* 3D Buttons */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    gap: 10px;
 }
 
-/* 3D Button Base Design */
 .btn {
-    height: 55px;
+    height: 52px;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
     color: #ffffff;
     font-size: 20px;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 6px 0 #0d0d0d, 0 8px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 5px 0 #0d0d0d, 0 6px 8px rgba(0,0,0,0.5);
     transition: all 0.1s ease;
 }
 
 .btn:active {
-    transform: translateY(4px);
-    box-shadow: 0 2px 0 #0d0d0d, 0 4px 5px rgba(0,0,0,0.5);
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #0d0d0d;
 }
 
-/* Operator Buttons (Orange Style) */
 .btn-operator {
     background: linear-gradient(145deg, #ff9f1c, #d47a00);
     color: #fff;
-    box-shadow: 0 6px 0 #995800, 0 8px 10px rgba(0,0,0,0.4);
+    box-shadow: 0 5px 0 #995800;
 }
 
-.btn-operator:active {
-    box-shadow: 0 2px 0 #995800;
-}
-
-/* Action Buttons (C, DEL) */
 .btn-action {
     background: linear-gradient(145deg, #e63946, #b01825);
     color: #fff;
-    box-shadow: 0 6px 0 #780d16, 0 8px 10px rgba(0,0,0,0.4);
+    box-shadow: 0 5px 0 #780d16;
 }
 
-.btn-action:active {
-    box-shadow: 0 2px 0 #780d16;
-}
-
-/* Equal Button (Green Style - 3D Height) */
 .btn-equal {
     background: linear-gradient(145deg, #2ec4b6, #0f9f92);
     color: #fff;
     grid-row: span 2;
-    height: 122px;
-    box-shadow: 0 6px 0 #08665e, 0 8px 10px rgba(0,0,0,0.4);
-}
-
-.btn-equal:active {
-    box-shadow: 0 2px 0 #08665e;
+    height: 114px;
+    box-shadow: 0 5px 0 #08665e;
 }
 
 .btn-zero {
     grid-column: span 2;
+}
+
+/* Extra Bottom Buttons */
+.extra-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-extra {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    background: #333;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #1a1a1a;
+    transition: background 0.2s;
+    font-size: 13px;
+}
+
+.btn-extra:hover {
+    background: #444;
+}
+
+.download-btn {
+    background: linear-gradient(145deg, #ff8c00, #cc7000);
+    box-shadow: 0 4px 0 #804600;
+}
+
+.download-btn:hover {
+    background: linear-gradient(145deg, #ffa024, #e67e00);
+}
+
+/* Modal View */
+.saved-modal {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    bottom: 15px;
+    background: #141414;
+    border: 2px solid #ffb703;
+    border-radius: 18px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.hidden {
+    display: none;
+}
+
+.saved-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ffb703;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #ff4d4d;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.saved-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.saved-item {
+    background: #222;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 3px solid #2ec4b6;
+    color: #ddd;
+    font-size: 12px;
+}
+
+.saved-item-title {
+    font-weight: bold;
+    color: #ff8c00;
+}
+
+.saved-item-result {
+    font-size: 14px;
+    color: #00ff66;
+    font-weight: bold;
+}
+
+.clear-history-btn {
+    margin-top: 10px;
+    background: #e63946;
+    border: none;
+    color: white;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
 }
