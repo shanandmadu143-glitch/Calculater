@@ -1,288 +1,184 @@
-/* Custom Reset & Typography */
 :root {
-    --bg-primary: #0a0c10;
-    --bg-surface: #14171f;
-    --bg-card: #1c202b;
-    --border-color: rgba(255, 255, 255, 0.08);
-    
-    --text-primary: #f3f4f6;
-    --text-secondary: #9ca3af;
-    --text-muted: #6b7280;
-    
-    --accent-blue: #3b82f6;
-    --accent-blue-hover: #2563eb;
+    --bg-main: #0a0c10;
+    --bg-card: #14171f;
+    --bg-input: #1c202b;
+    --border: rgba(255, 255, 255, 0.08);
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --accent-blue: #2563eb;
     --accent-green: #10b981;
+    --accent-orange: #f59e0b;
     --accent-red: #ef4444;
-    
-    --radius-lg: 16px;
-    --radius-md: 12px;
-    --radius-sm: 8px;
-    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 14px;
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Inter', -apple-system, sans-serif;
     -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
+    background-color: var(--bg-main);
+    color: var(--text-main);
     display: flex;
     justify-content: center;
     min-height: 100vh;
-    overflow-x: hidden;
 }
 
 .app-container {
     width: 100%;
     max-width: 480px;
-    background-color: var(--bg-surface);
+    background-color: var(--bg-card);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Header Component */
-.app-header {
-    padding: 20px 20px 14px 20px;
-    background-color: rgba(20, 23, 31, 0.85);
-    backdrop-filter: blur(12px);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    border-bottom: 1px solid var(--border-color);
+/* Calculator Section */
+.calculator-section {
+    padding: 16px;
+    background: #11141c;
+    border-bottom: 1px solid var(--border);
 }
 
-.header-content {
+.calc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.calc-header h2 { font-size: 18px; font-weight: 700; }
+.status-badge { font-size: 11px; background: rgba(16, 185, 129, 0.15); color: var(--accent-green); padding: 2px 8px; border-radius: 12px; }
+
+.display-box {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: right;
+    margin-bottom: 12px;
+}
+
+.expression-display { font-size: 14px; color: var(--text-muted); min-height: 20px; overflow-x: auto; }
+.result-display { font-size: 28px; font-weight: 700; color: var(--accent-green); margin-top: 4px; }
+
+.input-note-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.note-input {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+}
+
+.btn-save-record {
+    background: var(--accent-blue);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Keypad Grid */
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.key {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    padding: 14px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: active 0.1s;
+}
+
+.key:active { opacity: 0.7; transform: scale(0.98); }
+.key-action { color: var(--accent-orange); }
+.key-op { color: var(--accent-blue); }
+.key-equal { background: var(--accent-blue); color: #fff; }
+
+/* Saved History Section */
+.history-section {
+    padding: 16px;
+    flex: 1;
+}
+
+.history-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.app-header h1 {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-}
+.count-badge { font-size: 12px; color: var(--text-muted); }
+.swipe-hint { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin: 8px 0; }
 
-.count-badge {
-    background: rgba(255, 255, 255, 0.08);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
-.hint-text {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 10px;
-    font-weight: 500;
-}
-
-.hint-edit { color: var(--accent-blue); }
-.hint-delete { color: var(--accent-red); }
-
-/* History List Container */
-.history-container {
-    padding: 16px;
-    flex: 1;
-}
-
-/* Card Wrapper & Swipe Action Visuals */
 .card-wrapper {
     position: relative;
-    margin-bottom: 12px;
-    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    border-radius: 10px;
     overflow: hidden;
-    background-color: #0d0f14;
-    user-select: none;
+    background: #0d0f14;
 }
 
 .swipe-action {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    font-weight: 600;
-    font-size: 14px;
-    color: #ffffff;
+    top: 0; bottom: 0; width: 100%;
+    display: flex; align-items: center; padding: 0 16px;
+    font-weight: 600; font-size: 13px; color: #fff;
 }
+.swipe-edit { background: var(--accent-blue); justify-content: flex-start; }
+.swipe-delete { background: var(--accent-red); justify-content: flex-end; }
 
-.swipe-action-edit {
-    background-color: var(--accent-blue);
-    justify-content: flex-start;
-}
-
-.swipe-action-delete {
-    background-color: var(--accent-red);
-    justify-content: flex-end;
-}
-
-/* Foreground Item Card */
 .history-card {
     position: relative;
     z-index: 2;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 16px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     touch-action: pan-y;
-    will-change: transform;
 }
 
-.card-info {
-    flex: 1;
-    margin-right: 14px;
-    min-width: 0;
-}
+.card-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.card-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.card-amount { font-size: 15px; font-weight: 700; color: var(--accent-green); }
 
-.card-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.card-date {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-}
-
-.card-amount-wrap {
-    flex-shrink: 0;
-    text-align: right;
-}
-
-.card-amount {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--accent-green);
-    letter-spacing: -0.3px;
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-    font-size: 14px;
-}
-
-/* Modal Windows */
+/* Modal */
 .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    opacity: 1;
-    transition: var(--transition);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    display: flex; justify-content: center; align-items: center; z-index: 100;
 }
-
-.modal-backdrop.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.modal-card {
-    background: var(--bg-card);
-    width: 90%;
-    max-width: 400px;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
-    padding: 24px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.modal-header h3 {
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.btn-close {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 24px;
-    cursor: pointer;
-    line-height: 1;
-}
-
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-group label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-}
-
-.form-control {
-    width: 100%;
-    padding: 12px 14px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    color: var(--text-primary);
-    font-size: 14px;
-    outline: none;
-    transition: var(--transition);
-}
-
-.form-control:focus {
-    border-color: var(--accent-blue);
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 24px;
-}
-
-.btn {
-    padding: 10px 18px;
-    border-radius: var(--radius-sm);
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.btn-secondary { background: var(--bg-surface); color: var(--text-secondary); }
-.btn-secondary:hover { background: rgba(255,255,255,0.05); }
-
-.btn-primary { background: var(--accent-blue); color: #ffffff; }
-.btn-primary:hover { background: var(--accent-blue-hover); }
+.hidden { display: none; }
+.modal-card { background: var(--bg-card); width: 88%; max-width: 380px; padding: 20px; border-radius: 14px; border: 1px solid var(--border); }
+.modal-header { display: flex; justify-content: space-between; margin-bottom: 14px; }
+.btn-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.form-control { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: #fff; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.btn { padding: 8px 14px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+.btn-secondary { background: var(--bg-input); color: #fff; }
+.btn-primary { background: var(--accent-blue); color: #fff; }
