@@ -44,26 +44,29 @@
     }
 
     function bindEvents() {
-        // Keypad Click Event
-        document.querySelector('.buttons').addEventListener('click', (e) => {
-            const btn = e.target.closest('button');
-            if (!btn) return;
+        // Keypad Event Listener
+        const buttonsContainer = document.querySelector('.buttons');
+        if (buttonsContainer) {
+            buttonsContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
 
-            const val = btn.getAttribute('data-val');
-            const action = btn.getAttribute('data-action');
+                const val = btn.getAttribute('data-val');
+                const action = btn.getAttribute('data-action');
 
-            if (val !== null) {
-                appendCharacter(val);
-            } else if (action === 'clear') {
-                display.value = '';
-            } else if (action === 'delete') {
-                deleteLastChar();
-            } else if (action === 'calculate') {
-                calculateResult();
-            }
-        });
+                if (val !== null) {
+                    appendCharacter(val);
+                } else if (action === 'clear') {
+                    display.value = '';
+                } else if (action === 'delete') {
+                    deleteLastChar();
+                } else if (action === 'calculate') {
+                    calculateResult();
+                }
+            });
+        }
 
-        // Keyboard Shortcuts Event
+        // Keyboard Shortcut Listener
         document.addEventListener('keydown', (e) => {
             const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
             if (activeTag === 'input' || activeTag === 'select') return;
@@ -80,7 +83,7 @@
             }
         });
 
-        // Save Record Action
+        // Save Button Action
         document.getElementById('save-btn').addEventListener('click', () => {
             const result = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
@@ -110,7 +113,7 @@
             calcNote.value = '';
         });
 
-        // View History Modal
+        // Open History Modal
         document.getElementById('view-btn').addEventListener('click', () => {
             renderHistory();
             savedModal.classList.remove('hidden');
@@ -121,7 +124,7 @@
             savedModal.classList.add('hidden');
         });
 
-        // Clear History
+        // Clear All History
         document.getElementById('clear-all-btn').addEventListener('click', () => {
             if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
                 savedRecords = [];
@@ -130,7 +133,7 @@
             }
         });
 
-        // History Actions
+        // History Items Click Events
         savedList.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.edit-btn');
             const deleteBtn = e.target.closest('.delete-btn');
@@ -161,7 +164,7 @@
             }
         });
 
-        // Edit Modal Events
+        // Edit Modal Controls
         document.getElementById('close-edit-btn').addEventListener('click', closeEdit);
         document.getElementById('cancel-edit-btn').addEventListener('click', closeEdit);
 
@@ -187,17 +190,24 @@
             renderHistory();
         });
 
-        // Export Modal Events
-        document.getElementById('download-btn').addEventListener('click', () => {
-            if (savedRecords.length === 0) {
-                alert('Download කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
-                return;
-            }
-            downloadModal.classList.remove('hidden');
-        });
+        // Open Export Modal
+        const downloadBtn = document.getElementById('download-btn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (savedRecords.length === 0) {
+                    alert('Download කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
+                    return;
+                }
+                downloadModal.classList.remove('hidden');
+            });
+        }
 
+        // Close Export Modal
         document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
         document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
+
+        // Confirm Export Action
         document.getElementById('confirm-download-btn').addEventListener('click', handleExport);
     }
 
@@ -278,15 +288,70 @@
 
         const fileName = inputName ? inputName : `Vasana_Calculator_${year}-${month}-${day}`;
 
-        if (format === 'xml') {
-            exportXML(fileName);
+        if (format === 'pdf') {
+            exportPDF(fileName);
         } else if (format === 'word') {
             exportWord(fileName);
-        } else if (format === 'pdf') {
-            exportPDF(fileName);
+        } else if (format === 'xml') {
+            exportXML(fileName);
+        } else if (format === 'html') {
+            exportHTMLReport(fileName);
         }
 
         closeDownloadModal();
+        showToast('📥 File Download Started!');
+    }
+
+    function exportPDF(fileName) {
+        const tempContainer = document.createElement('div');
+        tempContainer.style.padding = '20px';
+        tempContainer.style.fontFamily = 'Arial, sans-serif';
+        tempContainer.style.color = '#333';
+
+        let tableRows = '';
+        savedRecords.forEach(r => {
+            tableRows += `
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;">${escapeHTML(r.note)}</td>
+                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;"><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;">${r.date}</td>
+                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;">${r.time}</td>
+                </tr>
+            `;
+        });
+
+        tempContainer.innerHTML = `
+            <h2 style="text-align: center; color: #cc7000; border-bottom: 2px solid #cc7000; padding-bottom: 10px; font-size: 18px;">
+                Vasana Calculator Saved History
+            </h2>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #f4f4f4;">
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">විස්තරය / නම</th>
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">ගණන / අගය</th>
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">දිනය</th>
+                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">වෙලාව</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        `;
+
+        if (window.html2pdf) {
+            const opt = {
+                margin:       10,
+                filename:     `${fileName}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(tempContainer).save();
+        } else {
+            // Fallback to HTML if html2pdf CDN fails
+            exportHTMLReport(fileName);
+        }
     }
 
     function exportXML(fileName) {
@@ -303,7 +368,6 @@
         xml += `</VasanaCalculatorRecords>`;
 
         downloadBlob(xml, 'text/xml;charset=utf-8;', `${fileName}.xml`);
-        showToast('📥 XML File Downloaded!');
     }
 
     function exportWord(fileName) {
@@ -353,63 +417,56 @@
         `;
 
         downloadBlob(htmlContent, 'application/msword;charset=utf-8;', `${fileName}.doc`);
-        showToast('📥 Word File Downloaded!');
     }
 
-    function exportPDF(fileName) {
-        if (typeof html2pdf === 'undefined') {
-            alert('PDF Library load වී නොමැත. කරුණාකර Internet Connection එක පරීක්ෂා කරන්න.');
-            return;
-        }
-
-        const pdfContainer = document.createElement('div');
-        pdfContainer.style.padding = '20px';
-        pdfContainer.style.fontFamily = 'Arial, sans-serif';
-        pdfContainer.style.color = '#111';
-
-        let rowsHTML = '';
+    function exportHTMLReport(fileName) {
+        let tableRows = '';
         savedRecords.forEach(r => {
-            rowsHTML += `
+            tableRows += `
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 8px;">${escapeHTML(r.note)}</td>
-                    <td style="border: 1px solid #ccc; padding: 8px; font-weight: bold; color: #d47a00;">${escapeHTML(String(r.expression))}</td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">${r.date}</td>
-                    <td style="border: 1px solid #ccc; padding: 8px;">${r.time}</td>
+                    <td>${escapeHTML(r.note)}</td>
+                    <td><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td>${r.date}</td>
+                    <td>${r.time}</td>
                 </tr>
             `;
         });
 
-        pdfContainer.innerHTML = `
-            <h2 style="text-align: center; color: #ff8c00; border-bottom: 2px solid #ff8c00; padding-bottom: 10px;">Vasana Calculator Saved History</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">
-                <thead>
-                    <tr style="background-color: #f4f4f4;">
-                        <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">විස්තරය / නම</th>
-                        <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">ගණන / අගය</th>
-                        <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">දිනය</th>
-                        <th style="border: 1px solid #ccc; padding: 8px; text-align: left;">වෙලාව</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHTML}
-                </tbody>
-            </table>
+        const htmlDocument = `
+            <!DOCTYPE html>
+            <html lang="si">
+            <head>
+                <meta charset="UTF-8">
+                <title>${escapeHTML(fileName)}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+                    h2 { text-align: center; color: #cc7000; border-bottom: 2px solid #cc7000; padding-bottom: 10px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ccc; padding: 10px 14px; text-align: left; font-size: 14px; }
+                    th { background-color: #f4f4f4; }
+                    tr:nth-child(even) { background-color: #fafafa; }
+                </style>
+            </head>
+            <body>
+                <h2>Vasana Calculator Saved History</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>විස්තරය / නම (Name/Note)</th>
+                            <th>ගණන / අගය (Value)</th>
+                            <th>දිනය (Date)</th>
+                            <th>වෙලාව (Time)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </body>
+            </html>
         `;
 
-        const opt = {
-            margin: 10,
-            filename: `${fileName}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        html2pdf().set(opt).from(pdfContainer).save().then(() => {
-            showToast('📥 PDF File Downloaded!');
-        }).catch(err => {
-            console.error('PDF export error:', err);
-            alert('PDF Export කිරීමට නොහැකි විය.');
-        });
+        downloadBlob(htmlDocument, 'text/html;charset=utf-8;', `${fileName}.html`);
     }
 
     function downloadBlob(content, type, fullFileName) {
@@ -420,7 +477,7 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(link.href), 100);
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     }
 
     function showToast(msg) {
