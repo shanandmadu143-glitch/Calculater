@@ -336,7 +336,7 @@
                     await navigator.share({
                         files: [file],
                         title: inputName,
-                        text: 'Vasana Calculator Data'
+                        text: 'WM Calculator Data'
                     });
                     showToast('🎉 Shared Successfully!');
                     closeDownloadModal();
