@@ -237,7 +237,7 @@ body {
 }
 
 .modal-overlay.z-high {
-    z-index: 110;
+    z-index: 120;
 }
 
 .modal-content {
