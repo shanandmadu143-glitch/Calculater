@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vasana Calculator</title>
+    <title>Vasana Calculator Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="calculator-card">
-        <!-- Live Date & Time -->
+        <!-- Live Date & Time Display -->
         <div class="datetime-container">
             <span id="current-date">----/--/--</span>
             <span id="current-time">00:00:00 AM</span>
         </div>
 
-        <!-- Title -->
+        <!-- App Header Title -->
         <h1 class="app-title">Vasana Calculator</h1>
 
-        <!-- Note Input & Save Button -->
+        <!-- Note Input Field & Save Button -->
         <div class="note-container">
             <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." maxlength="50" autocomplete="off">
             <button id="save-btn" type="button" title="Save Calculation">💾 Save</button>
         </div>
 
-        <!-- Display Screen -->
+        <!-- Calculator Display Screen -->
         <div class="display-container">
             <input type="text" id="display" placeholder="0" readonly autocomplete="off">
         </div>
 
-        <!-- Keypad Buttons -->
+        <!-- Calculator Keypad Buttons -->
         <div class="buttons">
             <button type="button" class="btn btn-action" data-action="clear">C</button>
             <button type="button" class="btn btn-action" data-action="delete">DEL</button>
@@ -55,15 +55,15 @@
             <button type="button" class="btn" data-val=".">.</button>
         </div>
 
-        <!-- Extra Controls -->
+        <!-- Action Control Buttons -->
         <div class="extra-controls">
             <button id="view-btn" class="btn-extra" type="button">👁️ View Saved</button>
-            <button id="download-btn" class="btn-extra download-btn" type="button">📥 Download</button>
+            <button id="download-btn" class="btn-extra download-btn" type="button">📥 Export</button>
         </div>
 
-        <!-- Saved History Popup Modal -->
+        <!-- Saved History Modal Overlay -->
         <div id="saved-modal" class="modal-overlay hidden">
-            <div class="modal-content">
+            <div class="modal-content animate-pop">
                 <div class="modal-header">
                     <h3>📜 Saved History</h3>
                     <button id="close-modal-btn" class="close-btn" type="button">✕</button>
@@ -73,9 +73,9 @@
             </div>
         </div>
 
-        <!-- Edit Record Popup Modal -->
-        <div id="edit-modal" class="modal-overlay hidden">
-            <div class="modal-content edit-modal-box">
+        <!-- Edit Item Modal Overlay -->
+        <div id="edit-modal" class="modal-overlay hidden z-high">
+            <div class="modal-content edit-modal-box animate-pop">
                 <div class="modal-header">
                     <h3>✏️ Edit Record</h3>
                     <button id="close-edit-btn" class="close-btn" type="button">✕</button>
@@ -93,9 +93,9 @@
             </div>
         </div>
 
-        <!-- Download Popup Modal -->
+        <!-- Export Data Modal Overlay -->
         <div id="download-modal" class="modal-overlay hidden">
-            <div class="modal-content download-modal-box">
+            <div class="modal-content download-modal-box animate-pop">
                 <div class="modal-header">
                     <h3>📥 Export Data</h3>
                     <button id="close-download-btn" class="close-btn" type="button">✕</button>
@@ -106,21 +106,21 @@
                     
                     <label for="export-format">Format (ආකෘතිය):</label>
                     <select id="export-format">
-                        <option value="xml">XML File (.xml)</option>
+                        <option value="xml">XML Document (.xml)</option>
                         <option value="word">Word Document (.doc)</option>
                         <option value="pdf">PDF File (.pdf)</option>
                     </select>
                 </div>
                 <div class="modal-actions">
-                    <button id="confirm-download-btn" class="save-edit-btn" type="button">Download Now</button>
+                    <button id="confirm-download-btn" class="save-edit-btn download-action-btn" type="button">Download Now</button>
                     <button id="cancel-download-btn" class="cancel-btn" type="button">Cancel</button>
                 </div>
             </div>
         </div>
 
-        <!-- Toast Notification Overlay -->
+        <!-- Toast Notification Message -->
         <div id="toast-message" class="toast hidden">
-            🎉 Data Saved Successfully!
+            🎉 Operation Completed Successfully!
         </div>
     </div>
 
