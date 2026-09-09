@@ -421,6 +421,10 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
 }
 
 .cancel-btn {
@@ -436,6 +440,27 @@ body {
 
 .download-action-btn {
     background: linear-gradient(145deg, #ff8c00, #cc7000);
+}
+
+.download-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Spinner Animation for Download Button */
+.btn-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ffffff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: btnSpin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes btnSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .toast {
