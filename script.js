@@ -44,7 +44,7 @@
     }
 
     function bindEvents() {
-        // Keypad Buttons Click
+        // Keypad Event Listener
         document.querySelector('.buttons').addEventListener('click', (e) => {
             const btn = e.target.closest('button');
             if (!btn) return;
@@ -63,14 +63,10 @@
             }
         });
 
-        // Keyboard Typing Listener
+        // Keyboard Shortcut Listener
         document.addEventListener('keydown', (e) => {
-            if (document.activeElement === calcNote || 
-                document.activeElement === document.getElementById('edit-note') || 
-                document.activeElement === document.getElementById('edit-expression') ||
-                document.activeElement === document.getElementById('export-filename')) {
-                return;
-            }
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag === 'input' || activeTag === 'select') return;
 
             if ((e.key >= '0' && e.key <= '9') || ['+', '-', '*', '/', '.'].includes(e.key)) {
                 appendCharacter(e.key);
@@ -84,7 +80,7 @@
             }
         });
 
-        // Save Button Click
+        // Save Button Action
         document.getElementById('save-btn').addEventListener('click', () => {
             const result = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
@@ -110,21 +106,22 @@
             savedRecords.push(record);
             saveToStorage();
 
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 2000);
+            showToast('🎉 Data Saved Successfully!');
             calcNote.value = '';
         });
 
-        // View Saved History Modal
+        // Open History Modal
         document.getElementById('view-btn').addEventListener('click', () => {
             renderHistory();
             savedModal.classList.remove('hidden');
         });
 
+        // Close History Modal
         document.getElementById('close-modal-btn').addEventListener('click', () => {
             savedModal.classList.add('hidden');
         });
 
+        // Clear All History
         document.getElementById('clear-all-btn').addEventListener('click', () => {
             if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
                 savedRecords = [];
@@ -133,7 +130,7 @@
             }
         });
 
-        // History Actions (Edit / Delete / Copy)
+        // History Items Click Events (Edit / Cut / Copy)
         savedList.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.edit-btn');
             const deleteBtn = e.target.closest('.delete-btn');
@@ -164,7 +161,7 @@
             }
         });
 
-        // Edit Modal Actions
+        // Edit Modal Controls
         document.getElementById('close-edit-btn').addEventListener('click', closeEdit);
         document.getElementById('cancel-edit-btn').addEventListener('click', closeEdit);
 
@@ -190,7 +187,7 @@
             renderHistory();
         });
 
-        // Open Download Popup Modal
+        // Open Export Modal
         document.getElementById('download-btn').addEventListener('click', () => {
             if (savedRecords.length === 0) {
                 alert('Download කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
@@ -199,11 +196,11 @@
             downloadModal.classList.remove('hidden');
         });
 
-        // Close Download Popup
+        // Close Export Modal
         document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
         document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
 
-        // Confirm Download
+        // Confirm Export Action
         document.getElementById('confirm-download-btn').addEventListener('click', handleExport);
     }
 
@@ -293,6 +290,7 @@
         }
 
         closeDownloadModal();
+        showToast('📥 File Downloaded Successfully!');
     }
 
     function exportXML(fileName) {
@@ -362,6 +360,11 @@
 
     function exportPDF(fileName) {
         const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Popup blocked! කරුණාකර Browser එකෙහි Popups Allow කරන්න.');
+            return;
+        }
+
         let tableRows = '';
         savedRecords.forEach(r => {
             tableRows += `
@@ -422,6 +425,13 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(link.href), 100);
+    }
+
+    function showToast(msg) {
+        toast.innerText = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 2200);
     }
 
     function escapeHTML(str) {
