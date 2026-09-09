@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Saved History</title>
+    <title>Smart Calculator & History</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Font for Clean UI -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,45 +12,88 @@
 <body>
 
     <div class="app-container">
-        <!-- Header Section -->
-        <header class="app-header">
-            <div class="header-content">
-                <h1>Saved History</h1>
-                <span class="count-badge" id="itemCount">0 Items</span>
+        <!-- Main Display / Calculator Section -->
+        <section class="calculator-section">
+            <div class="calc-header">
+                <h2>Smart Calculator</h2>
+                <span class="status-badge">Ready</span>
             </div>
-            <p class="hint-text">
-                <span class="hint-edit">➔ Swipe Right to Edit</span>
-                <span class="hint-delete">Swipe Left to Delete ➔</span>
-            </p>
-        </header>
 
-        <!-- Dynamic List Container -->
-        <main class="history-container" id="historyContainer">
-            <!-- Items rendered via JavaScript -->
-        </main>
+            <!-- Display Area -->
+            <div class="display-box">
+                <div class="expression-display" id="expressionDisplay">0</div>
+                <div class="result-display" id="resultDisplay">0.00</div>
+            </div>
+
+            <!-- Title / Note Input for Saving -->
+            <div class="input-note-group">
+                <input type="text" id="recordTitle" class="note-input" placeholder="ගණනය කිරීමේ සටහන (උදා: සුපර්මාර්කට් බඩු)..." autocomplete="off">
+                <button class="btn-save-record" onclick="saveCurrentCalculation()">💾 Save</button>
+            </div>
+
+            <!-- Calculator Keypad -->
+            <div class="keypad">
+                <button class="key key-action" onclick="clearCalculator()">C</button>
+                <button class="key key-action" onclick="deleteLastDigit()">⌫</button>
+                <button class="key key-op" onclick="appendOperator('%')">%</button>
+                <button class="key key-op" onclick="appendOperator('/')">÷</button>
+
+                <button class="key" onclick="appendNum('7')">7</button>
+                <button class="key" onclick="appendNum('8')">8</button>
+                <button class="key" onclick="appendNum('9')">9</button>
+                <button class="key key-op" onclick="appendOperator('*')">×</button>
+
+                <button class="key" onclick="appendNum('4')">4</button>
+                <button class="key" onclick="appendNum('5')">5</button>
+                <button class="key" onclick="appendNum('6')">6</button>
+                <button class="key key-op" onclick="appendOperator('-')">-</button>
+
+                <button class="key" onclick="appendNum('1')">1</button>
+                <button class="key" onclick="appendNum('2')">2</button>
+                <button class="key" onclick="appendNum('3')">3</button>
+                <button class="key key-op" onclick="appendOperator('+')">+</button>
+
+                <button class="key" onclick="appendNum('00')">00</button>
+                <button class="key" onclick="appendNum('0')">0</button>
+                <button class="key" onclick="appendNum('.')">.</button>
+                <button class="key key-equal" onclick="calculateResult()">=</button>
+            </div>
+        </section>
+
+        <!-- Saved History Section -->
+        <section class="history-section">
+            <div class="history-header">
+                <h3>Saved History</h3>
+                <span class="count-badge" id="historyCount">0 Items</span>
+            </div>
+            <p class="swipe-hint">
+                <span>➔ Swipe Right to Edit</span>
+                <span>Swipe Left to Delete ➔</span>
+            </p>
+
+            <div class="history-list" id="historyContainer">
+                <!-- Saved items rendered here -->
+            </div>
+        </section>
     </div>
 
-    <!-- Professional Edit Modal -->
-    <div id="editModal" class="modal-backdrop hidden" aria-hidden="true">
+    <!-- Edit Modal Window -->
+    <div id="editModal" class="modal-backdrop hidden">
         <div class="modal-card">
             <div class="modal-header">
                 <h3>Edit Record</h3>
-                <button class="btn-close" onclick="closeEditModal()" aria-label="Close">&times;</button>
+                <button class="btn-close" onclick="closeEditModal()">&times;</button>
             </div>
-            
-            <form id="editForm" onsubmit="handleSaveEdit(event)">
+            <form onsubmit="handleSaveEdit(event)">
                 <input type="hidden" id="editItemId">
-                
                 <div class="form-group">
-                    <label for="editItemName">Description / Title</label>
-                    <input type="text" id="editItemName" class="form-control" placeholder="Enter title" required autocomplete="off">
+                    <label>Title / Description</label>
+                    <input type="text" id="editItemName" class="form-control" required>
                 </div>
-
                 <div class="form-group">
-                    <label for="editItemAmount">Amount (LKR)</label>
-                    <input type="number" step="0.01" id="editItemAmount" class="form-control" placeholder="0.00" required>
+                    <label>Amount (LKR)</label>
+                    <input type="number" step="0.01" id="editItemAmount" class="form-control" required>
                 </div>
-
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Changes</button>
