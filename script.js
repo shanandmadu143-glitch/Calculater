@@ -4,134 +4,151 @@ let historyItems = [
     { id: '2', name: 'පෙට්‍රල් - Bajaj CT 100', amount: 2500.00, date: '2026-09-07' }
 ];
 
-const exprDisplay = document.getElementById('expressionDisplay');
-const resDisplay = document.getElementById('resultDisplay');
+const exprDisplay = document.getElementById('calcExpression');
+const resDisplay = document.getElementById('calcResult');
 const historyContainer = document.getElementById('historyContainer');
 
-// Calculator Functions
+// Calculator Logic
 function appendNum(num) {
     expression += num;
-    updateDisplay();
+    updateCalcDisplay();
 }
 
-function appendOperator(op) {
-    if (expression === '' && op !== '-') return;
-    const lastChar = expression.slice(-1);
-    if (['+', '-', '*', '/', '%'].includes(lastChar)) {
+function appendOp(op) {
+    if (!expression && op !== '-') return;
+    const last = expression.slice(-1);
+    if (['+', '-', '*', '/', '%'].includes(last)) {
         expression = expression.slice(0, -1) + op;
     } else {
         expression += op;
     }
-    updateDisplay();
+    updateCalcDisplay();
 }
 
-function clearCalculator() {
+function clearCalc() {
     expression = '';
     resDisplay.textContent = '0.00';
-    updateDisplay();
+    updateCalcDisplay();
 }
 
-function deleteLastDigit() {
+function deleteDigit() {
     expression = expression.slice(0, -1);
-    updateDisplay();
+    updateCalcDisplay();
 }
 
-function updateDisplay() {
+function updateCalcDisplay() {
     exprDisplay.textContent = expression || '0';
 }
 
-function calculateResult() {
+function calculate() {
     try {
         if (!expression) return;
-        const evalResult = eval(expression.replace(/×/g, '*').replace(/÷/g, '/'));
-        resDisplay.textContent = Number(evalResult).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        const val = eval(expression.replace(/×/g, '*').replace(/÷/g, '/'));
+        resDisplay.textContent = Number(val).toLocaleString('en-US', { minimumFractionDigits: 2 });
     } catch (e) {
         resDisplay.textContent = 'Error';
     }
 }
 
-// Save Current Calculation to History
-function saveCurrentCalculation() {
-    const titleInput = document.getElementById('recordTitle');
-    const noteText = titleInput.value.trim() || 'ගණනය කිරීම';
+function saveCalculation() {
+    const input = document.getElementById('noteInput');
+    const note = input.value.trim() || 'ගණනය කිරීම';
     const amountVal = parseFloat(resDisplay.textContent.replace(/,/g, ''));
 
     if (isNaN(amountVal) || amountVal === 0) {
-        alert('කරුණාකර පළමුව ගණනය කිරීමක් සිදු කරන්න.');
+        alert('කරුණාකර ප්‍රථමයෙන් අගයක් ගණනය කරන්න.');
         return;
     }
 
-    const newItem = {
+    const item = {
         id: Date.now().toString(),
-        name: noteText,
+        name: note,
         amount: amountVal,
         date: new Date().toISOString().split('T')[0]
     };
 
-    historyItems.unshift(newItem);
-    titleInput.value = '';
+    historyItems.unshift(item);
+    input.value = '';
     renderHistory();
 }
 
-// Render History List
+// History Render (Fixing Item Name and Amount Display + Swipe Actions)
 function renderHistory() {
     historyContainer.innerHTML = '';
     document.getElementById('historyCount').textContent = `${historyItems.length} Items`;
 
     if (historyItems.length === 0) {
-        historyContainer.innerHTML = '<div style="text-align:center; color:#6b7280; margin-top:20px; font-size:13px;">Saved history නැත.</div>';
+        historyContainer.innerHTML = '<div style="text-align:center; color:#7d7890; padding:20px;">Saved items කිසිවක් නැත.</div>';
         return;
     }
 
     historyItems.forEach(item => {
         const wrapper = document.createElement('div');
         wrapper.className = 'card-wrapper';
+
         wrapper.innerHTML = `
-            <div class="swipe-action swipe-edit">✏️ Edit</div>
-            <div class="swipe-action swipe-delete">🗑️ Delete</div>
-            <div class="history-card">
-                <div>
-                    <div class="card-title">${item.name}</div>
-                    <div class="card-date">${item.date}</div>
+            <div class="swipe-indicator swipe-edit">✏️ Edit</div>
+            <div class="swipe-indicator swipe-delete">🗑️ Delete</div>
+            <div class="saved-card" id="card-${item.id}">
+                <div class="card-left">
+                    <div class="saved-card-title">${item.name}</div>
+                    <div class="saved-card-date">${item.date}</div>
                 </div>
-                <div class="card-amount">LKR ${Number(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                <div class="card-right">
+                    <div class="saved-card-value">LKR ${Number(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                </div>
             </div>
         `;
 
         historyContainer.appendChild(wrapper);
-        bindSwipe(wrapper.querySelector('.history-card'), item);
+        bindSwipeEvents(wrapper.querySelector('.saved-card'), item);
     });
 }
 
-// Swipe Gesture Logic
-function bindSwipe(card, item) {
+// Swipe Controls Logic (Right -> Edit | Left -> Delete)
+function bindSwipeEvents(cardElement, item) {
     let startX = 0;
     let currentX = 0;
 
-    card.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
-    card.addEventListener('touchmove', e => {
-        currentX = e.touches[0].clientX;
-        let diff = currentX - startX;
-        if (Math.abs(diff) < 120) card.style.transform = `translateX(${diff}px)`;
+    cardElement.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
     }, { passive: true });
 
-    card.addEventListener('touchend', () => {
-        let diff = currentX - startX;
-        card.style.transform = 'translateX(0px)';
-        if (diff > 70) openEditModal(item);
-        else if (diff < -70 && confirm(`"${item.name}" මකා දැමීමට අවශ්‍යද?`)) {
-            historyItems = historyItems.filter(i => i.id !== item.id);
-            renderHistory();
+    cardElement.addEventListener('touchmove', (e) => {
+        currentX = e.touches[0].clientX;
+        let diffX = currentX - startX;
+
+        if (Math.abs(diffX) < 120) {
+            cardElement.style.transform = `translateX(${diffX}px)`;
         }
-        startX = 0; currentX = 0;
+    }, { passive: true });
+
+    cardElement.addEventListener('touchend', () => {
+        let diffX = currentX - startX;
+        cardElement.style.transform = 'translateX(0px)';
+
+        // Swipe Right -> Edit
+        if (diffX > 75) {
+            openEditModal(item);
+        } 
+        // Swipe Left -> Delete
+        else if (diffX < -75) {
+            if (confirm(`"${item.name}" මකා දැමීමට ඔබට විශ්වාසද?`)) {
+                historyItems = historyItems.filter(i => i.id !== item.id);
+                renderHistory();
+            }
+        }
+
+        startX = 0;
+        currentX = 0;
     });
 }
 
-// Modal Logic
+// Edit Modal Handling
 function openEditModal(item) {
-    document.getElementById('editItemId').value = item.id;
-    document.getElementById('editItemName').value = item.name;
-    document.getElementById('editItemAmount').value = item.amount;
+    document.getElementById('editId').value = item.id;
+    document.getElementById('editName').value = item.name;
+    document.getElementById('editAmount').value = item.amount;
     document.getElementById('editModal').classList.remove('hidden');
 }
 
@@ -139,15 +156,17 @@ function closeEditModal() {
     document.getElementById('editModal').classList.add('hidden');
 }
 
-function handleSaveEdit(e) {
-    e.preventDefault();
-    const id = document.getElementById('editItemId').value;
-    const name = document.getElementById('editItemName').value;
-    const amount = parseFloat(document.getElementById('editItemAmount').value);
+function saveEdit() {
+    const id = document.getElementById('editId').value;
+    const name = document.getElementById('editName').value.trim();
+    const amount = parseFloat(document.getElementById('editAmount').value);
+
+    if (!name || isNaN(amount)) return;
 
     historyItems = historyItems.map(i => i.id === id ? { ...i, name, amount } : i);
     closeEditModal();
     renderHistory();
 }
 
+// Run Initial Render
 renderHistory();
