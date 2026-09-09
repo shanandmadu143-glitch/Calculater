@@ -338,6 +338,11 @@ body {
     margin-top: 18px;
 }
 
+.modal-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
 .save-edit-btn {
     flex: 1;
     background: linear-gradient(145deg, #28a745, #1e7e34);
@@ -350,7 +355,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    font-size: 13px;
 }
 
 .cancel-btn {
@@ -364,11 +370,19 @@ body {
     font-weight: bold;
 }
 
+.full-width {
+    width: 100%;
+}
+
 .download-action-btn {
     background: linear-gradient(145deg, #ff8c00, #cc7000);
 }
 
-.download-action-btn:disabled {
+.share-action-btn {
+    background: linear-gradient(145deg, #2ec4b6, #0f9f92);
+}
+
+.download-action-btn:disabled, .share-action-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
