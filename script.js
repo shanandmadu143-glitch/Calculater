@@ -187,7 +187,7 @@
             downloadBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (savedRecords.length === 0) {
-                    alert('Download කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
+                    alert('Export / Share කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
                     return;
                 }
                 document.getElementById('export-filename').value = '';
@@ -198,7 +198,11 @@
         document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
         document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
 
-        document.getElementById('confirm-download-btn').addEventListener('click', handleExport);
+        // Download Event Listener
+        document.getElementById('confirm-download-btn').addEventListener('click', () => handleExport(false));
+
+        // Share Event Listener
+        document.getElementById('confirm-share-btn').addEventListener('click', () => handleExport(true));
     }
 
     function appendCharacter(char) {
@@ -267,8 +271,8 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
     }
 
-    // Export Logic with Direct Same-Tab Download Trigger
-    async function handleExport() {
+    // Unified Export & Share Handler
+    async function handleExport(isShare = false) {
         const inputName = document.getElementById('export-filename').value.trim();
         const format = document.getElementById('export-format').value;
 
@@ -277,74 +281,83 @@
             return;
         }
 
-        const confirmBtn = document.getElementById('confirm-download-btn');
-        const spinner = document.getElementById('download-spinner');
-        const btnText = document.getElementById('download-btn-text');
+        const confirmBtn = isShare ? document.getElementById('confirm-share-btn') : document.getElementById('confirm-download-btn');
+        const spinner = isShare ? document.getElementById('share-spinner') : document.getElementById('download-spinner');
+        const btnText = isShare ? document.getElementById('share-btn-text') : document.getElementById('download-btn-text');
 
-        // Loading animation ආරම්භය
+        // Loading state
         confirmBtn.disabled = true;
         spinner.classList.remove('hidden');
-        btnText.innerText = 'Downloading...';
+        btnText.innerText = isShare ? 'Preparing...' : 'Downloading...';
 
         try {
-            let fileData, mimeType, extension;
+            let blob, extension, mimeType;
 
             if (format === 'pdf') {
-                await exportPDFDirect(inputName);
-            } else {
-                if (format === 'word') {
-                    fileData = getWordContent();
-                    mimeType = 'application/msword';
-                    extension = 'doc';
-                } else if (format === 'xml') {
-                    fileData = getXMLContent();
-                    mimeType = 'text/xml';
-                    extension = 'xml';
-                } else if (format === 'html') {
-                    fileData = getHTMLContent(inputName);
-                    mimeType = 'text/html';
-                    extension = 'html';
-                }
-
-                const fullFileName = `${inputName}.${extension}`;
-                triggerDirectDownload(fileData, mimeType, fullFileName);
+                extension = 'pdf';
+                mimeType = 'application/pdf';
+                blob = await generatePDFBlob();
+            } else if (format === 'word') {
+                extension = 'doc';
+                mimeType = 'application/msword';
+                blob = new Blob([getWordContent()], { type: `${mimeType};charset=utf-8;` });
+            } else if (format === 'xml') {
+                extension = 'xml';
+                mimeType = 'text/xml';
+                blob = new Blob([getXMLContent()], { type: `${mimeType};charset=utf-8;` });
+            } else if (format === 'html') {
+                extension = 'html';
+                mimeType = 'text/html';
+                blob = new Blob([getHTMLContent(inputName)], { type: `${mimeType};charset=utf-8;` });
             }
 
-            // සාර්ථක වූ පසු Modal එක වසා Reset කිරීම
-            setTimeout(() => {
-                closeDownloadModal();
+            const fullFileName = `${inputName}.${extension}`;
+
+            if (isShare) {
+                // Share via Web Share API
+                const file = new File([blob], fullFileName, { type: mimeType });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: inputName,
+                        text: 'Vasana Calculator Data'
+                    });
+                    showToast('🎉 Shared Successfully!');
+                    closeDownloadModal();
+                } else {
+                    alert('ඔබගේ Device/Browser එක මගින් Direct File Share කිරීම සහාය නොදක්වයි. Download කිරීම භාවිත කරන්න.');
+                }
+            } else {
+                // Direct Download in same tab
+                const blobUrl = URL.createObjectURL(blob);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = blobUrl;
+                downloadLink.download = fullFileName;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+                
                 showToast('🎉 File Downloaded Successfully!');
-                confirmBtn.disabled = false;
-                spinner.classList.add('hidden');
-                btnText.innerText = 'Download Now';
-            }, 1000);
+                closeDownloadModal();
+            }
 
         } catch (err) {
-            alert('Download එක අසාර්ථක විය: ' + err.message);
+            if (err.name !== 'AbortError') { // Share cancel කළ විට error නොපෙන්වීමට
+                alert('ක්‍රියාවලිය අසාර්ථක විය: ' + err.message);
+            }
+        } finally {
+            // Reset Button State
             confirmBtn.disabled = false;
             spinner.classList.add('hidden');
-            btnText.innerText = 'Download Now';
+            btnText.innerText = isShare ? '🔗 Share File' : 'Download';
         }
     }
 
-    // අලුත් Tab open නොවී direct download වන Function එක
-    function triggerDirectDownload(content, mimeType, fileName) {
-        const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
-        const blobUrl = URL.createObjectURL(blob);
-
-        const downloadLink = document.createElement('a');
-        downloadLink.href = blobUrl;
-        downloadLink.download = fileName;
-        // target="_blank" ඉවත් කර ඇත - එකම Tab එකෙන් Download වේ
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
-    }
-
-    // Direct PDF Export (Same Tab)
-    async function exportPDFDirect(fileName) {
+    // Generate PDF Blob
+    async function generatePDFBlob() {
         const tempContainer = document.createElement('div');
         tempContainer.style.padding = '20px';
         tempContainer.style.fontFamily = 'Arial, sans-serif';
@@ -377,22 +390,14 @@
         `;
 
         if (window.html2pdf) {
-            const pdfBlob = await html2pdf().set({
+            return await html2pdf().set({
                 margin: 10,
-                filename: `${fileName}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             }).from(tempContainer).output('blob');
-
-            const pdfUrl = URL.createObjectURL(pdfBlob);
-            const link = document.createElement('a');
-            link.href = pdfUrl;
-            link.download = `${fileName}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
+        } else {
+            throw new Error('PDF generator library loading failed');
         }
     }
 
