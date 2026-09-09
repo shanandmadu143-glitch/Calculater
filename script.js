@@ -278,7 +278,7 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
     }
 
-    // Export Logic with File Location Picker & Loading Animation
+    // Export Logic with Default Browser / System Download Manager Triggering
     async function handleExport() {
         const inputName = document.getElementById('export-filename').value.trim();
         const format = document.getElementById('export-format').value;
@@ -292,97 +292,96 @@
         const spinner = document.getElementById('download-spinner');
         const btnText = document.getElementById('download-btn-text');
 
-        // Start Loading Effect
+        // Start Loading Animation
         confirmBtn.disabled = true;
         spinner.classList.remove('hidden');
         btnText.innerText = 'Preparing File...';
 
         try {
+            let fileData, mimeType, extension;
+
             if (format === 'pdf') {
-                await exportPDFWithLocation(inputName);
+                await exportPDFDirect(inputName);
+                closeDownloadModal();
+                showToast('📥 File Processing via Browser!');
+                return;
             } else if (format === 'word') {
-                await exportDataWithLocation(getWordContent(), 'application/msword', `${inputName}.doc`);
+                fileData = getWordContent();
+                mimeType = 'application/msword';
+                extension = 'doc';
             } else if (format === 'xml') {
-                await exportDataWithLocation(getXMLContent(), 'text/xml', `${inputName}.xml`);
+                fileData = getXMLContent();
+                mimeType = 'text/xml';
+                extension = 'xml';
             } else if (format === 'html') {
-                await exportDataWithLocation(getHTMLContent(inputName), 'text/html', `${inputName}.html`);
+                fileData = getHTMLContent(inputName);
+                mimeType = 'text/html';
+                extension = 'html';
             }
 
+            const fullFileName = `${inputName}.${extension}`;
+            triggerBrowserDownload(fileData, mimeType, fullFileName);
+
             closeDownloadModal();
-            showToast('📥 File Saved Successfully!');
+            showToast('📥 File Processing via Browser!');
         } catch (err) {
-            if (err.name !== 'AbortError') {
-                alert('Download එක අතරමැදදී අසාර්ථක විය: ' + err.message);
-            }
+            alert('Download එක අතරමැදදී අසාර්ථක විය: ' + err.message);
         } finally {
-            // Stop Loading Effect
+            // Stop Loading Animation
             confirmBtn.disabled = false;
             spinner.classList.add('hidden');
             btnText.innerText = 'Download Now';
         }
     }
 
-    async function exportDataWithLocation(content, mimeType, fullFileName) {
+    // Direct Browser Download Dispatcher
+    function triggerBrowserDownload(content, mimeType, fileName) {
         const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
+        const blobUrl = URL.createObjectURL(blob);
 
-        // Save File System Access API
-        if ('showSaveFilePicker' in window) {
-            const handle = await window.showSaveFilePicker({
-                suggestedName: fullFileName,
-                types: [{
-                    description: 'Document File',
-                    accept: { [mimeType]: ['.' + fullFileName.split('.').pop()] }
-                }]
-            });
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-        } else {
-            // Fallback for unsupported browsers
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = fullFileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-        }
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = fileName;
+        downloadLink.target = '_blank';
+        downloadLink.rel = 'noopener noreferrer';
+
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
     }
 
-    async function exportPDFWithLocation(fileName) {
+    // Direct PDF Export Generator
+    async function exportPDFDirect(fileName) {
         const tempContainer = document.createElement('div');
         tempContainer.style.padding = '20px';
         tempContainer.style.fontFamily = 'Arial, sans-serif';
-        tempContainer.style.color = '#333';
 
         let tableRows = '';
         savedRecords.forEach(r => {
             tableRows += `
                 <tr>
-                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;">${escapeHTML(r.note)}</td>
-                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;"><b>${escapeHTML(String(r.expression))}</b></td>
-                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;">${r.date}</td>
-                    <td style="border: 1px solid #ccc; padding: 10px; font-size: 13px;">${r.time}</td>
+                    <td style="border: 1px solid #ccc; padding: 10px;">${escapeHTML(r.note)}</td>
+                    <td style="border: 1px solid #ccc; padding: 10px;"><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td style="border: 1px solid #ccc; padding: 10px;">${r.date}</td>
+                    <td style="border: 1px solid #ccc; padding: 10px;">${r.time}</td>
                 </tr>
             `;
         });
 
         tempContainer.innerHTML = `
-            <h2 style="text-align: center; color: #cc7000; border-bottom: 2px solid #cc7000; padding-bottom: 10px; font-size: 18px;">
-                Vasana Calculator Saved History
-            </h2>
+            <h2 style="text-align: center; color: #cc7000;">Vasana Calculator Saved History</h2>
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                 <thead>
                     <tr style="background-color: #f4f4f4;">
-                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">විස්තරය / නම</th>
-                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">ගණන / අගය</th>
-                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">දිනය</th>
-                        <th style="border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 13px;">වෙලාව</th>
+                        <th style="border: 1px solid #ccc; padding: 10px;">විස්තරය / නම</th>
+                        <th style="border: 1px solid #ccc; padding: 10px;">ගණන / අගය</th>
+                        <th style="border: 1px solid #ccc; padding: 10px;">දිනය</th>
+                        <th style="border: 1px solid #ccc; padding: 10px;">වෙලාව</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${tableRows}
-                </tbody>
+                <tbody>${tableRows}</tbody>
             </table>
         `;
 
@@ -395,28 +394,15 @@
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             }).from(tempContainer).output('blob');
 
-            if ('showSaveFilePicker' in window) {
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: `${fileName}.pdf`,
-                    types: [{
-                        description: 'PDF Document',
-                        accept: { 'application/pdf': ['.pdf'] }
-                    }]
-                });
-                const writable = await handle.createWritable();
-                await writable.write(pdfBlob);
-                await writable.close();
-            } else {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(pdfBlob);
-                link.download = `${fileName}.pdf`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-            }
-        } else {
-            await exportDataWithLocation(getHTMLContent(fileName), 'text/html', `${fileName}.html`);
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = `${fileName}.pdf`;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 2000);
         }
     }
 
