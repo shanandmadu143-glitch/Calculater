@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vasana Calculator Pro</title>
     <link rel="stylesheet" href="style.css">
-    <!-- html2pdf Library for direct client-side PDF downloads -->
+    <!-- html2pdf.js for client-side PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -96,7 +96,7 @@
         </div>
 
         <!-- Export Data Modal Overlay -->
-        <div id="download-modal" class="modal-overlay hidden">
+        <div id="download-modal" class="modal-overlay hidden z-high">
             <div class="modal-content download-modal-box animate-pop">
                 <div class="modal-header">
                     <h3>📥 Export Data</h3>
@@ -104,13 +104,14 @@
                 </div>
                 <div class="download-inputs">
                     <label for="export-filename">File Name (ගොනුවේ නම):</label>
-                    <input type="text" id="export-filename" placeholder="Default: Vasana_Calculator" autocomplete="off">
+                    <input type="text" id="export-filename" placeholder="Default: දිනය යෙදේ" autocomplete="off">
                     
                     <label for="export-format">Format (ආකෘතිය):</label>
                     <select id="export-format">
-                        <option value="pdf">PDF File (.pdf)</option>
+                        <option value="pdf">PDF Document (.pdf)</option>
                         <option value="word">Word Document (.doc)</option>
                         <option value="xml">XML Document (.xml)</option>
+                        <option value="html">Printable Web Page (.html)</option>
                     </select>
                 </div>
                 <div class="modal-actions">
