@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WM Calculator</title>
+    <title>Vasana Calculator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
         </div>
 
         <!-- Title -->
-        <h1 class="app-title">WM Calculator</h1>
+        <h1 class="app-title">Vasana Calculator</h1>
 
         <!-- Note Input & Save Button -->
         <div class="note-container">
@@ -58,7 +58,7 @@
         <!-- Extra Controls -->
         <div class="extra-controls">
             <button id="view-btn" class="btn-extra" type="button">👁️ View Saved</button>
-            <button id="download-btn" class="btn-extra download-btn" type="button">📥 Download XML</button>
+            <button id="download-btn" class="btn-extra download-btn" type="button">📥 Download</button>
         </div>
 
         <!-- Saved History Popup Modal -->
@@ -89,6 +89,31 @@
                 <div class="modal-actions">
                     <button id="save-edit-btn" class="save-edit-btn" type="button">Save Changes</button>
                     <button id="cancel-edit-btn" class="cancel-btn" type="button">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Popup Modal -->
+        <div id="download-modal" class="modal-overlay hidden">
+            <div class="modal-content download-modal-box">
+                <div class="modal-header">
+                    <h3>📥 Export Data</h3>
+                    <button id="close-download-btn" class="close-btn" type="button">✕</button>
+                </div>
+                <div class="download-inputs">
+                    <label for="export-filename">File Name (ගොනුවේ නම):</label>
+                    <input type="text" id="export-filename" placeholder="Default: දිනය යෙදේ" autocomplete="off">
+                    
+                    <label for="export-format">Format (ආකෘතිය):</label>
+                    <select id="export-format">
+                        <option value="xml">XML File (.xml)</option>
+                        <option value="word">Word Document (.doc)</option>
+                        <option value="pdf">PDF File (.pdf)</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button id="confirm-download-btn" class="save-edit-btn" type="button">Download Now</button>
+                    <button id="cancel-download-btn" class="cancel-btn" type="button">Cancel</button>
                 </div>
             </div>
         </div>
