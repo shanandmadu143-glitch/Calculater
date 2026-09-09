@@ -3,102 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Calculator & History</title>
+    <title>Calculator & Saved History</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Main Display / Calculator Section -->
-        <section class="calculator-section">
-            <div class="calc-header">
-                <h2>Smart Calculator</h2>
-                <span class="status-badge">Ready</span>
+        <!-- Calculator Section -->
+        <div class="calculator-card">
+            <div class="calc-display">
+                <div id="calcExpression" class="calc-expression">0</div>
+                <div id="calcResult" class="calc-result">0.00</div>
             </div>
 
-            <!-- Display Area -->
-            <div class="display-box">
-                <div class="expression-display" id="expressionDisplay">0</div>
-                <div class="result-display" id="resultDisplay">0.00</div>
+            <div class="save-input-group">
+                <input type="text" id="noteInput" placeholder="සටහන / නම ඇතුළත් කරන්න..." autocomplete="off">
+                <button id="btnSave" onclick="saveCalculation()">Save</button>
             </div>
 
-            <!-- Title / Note Input for Saving -->
-            <div class="input-note-group">
-                <input type="text" id="recordTitle" class="note-input" placeholder="ගණනය කිරීමේ සටහන (උදා: සුපර්මාර්කට් බඩු)..." autocomplete="off">
-                <button class="btn-save-record" onclick="saveCurrentCalculation()">💾 Save</button>
+            <div class="calc-keypad">
+                <button class="btn-key btn-action" onclick="clearCalc()">C</button>
+                <button class="btn-key btn-action" onclick="deleteDigit()">⌫</button>
+                <button class="btn-key btn-op" onclick="appendOp('%')">%</button>
+                <button class="btn-key btn-op" onclick="appendOp('/')">÷</button>
+
+                <button class="btn-key" onclick="appendNum('7')">7</button>
+                <button class="btn-key" onclick="appendNum('8')">8</button>
+                <button class="btn-key" onclick="appendNum('9')">9</button>
+                <button class="btn-key btn-op" onclick="appendOp('*')">×</button>
+
+                <button class="btn-key" onclick="appendNum('4')">4</button>
+                <button class="btn-key" onclick="appendNum('5')">5</button>
+                <button class="btn-key" onclick="appendNum('6')">6</button>
+                <button class="btn-key btn-op" onclick="appendOp('-')">-</button>
+
+                <button class="btn-key" onclick="appendNum('1')">1</button>
+                <button class="btn-key" onclick="appendNum('2')">2</button>
+                <button class="btn-key" onclick="appendNum('3')">3</button>
+                <button class="btn-key btn-op" onclick="appendOp('+')">+</button>
+
+                <button class="btn-key" onclick="appendNum('00')">00</button>
+                <button class="btn-key" onclick="appendNum('0')">0</button>
+                <button class="btn-key" onclick="appendNum('.')">.</button>
+                <button class="btn-key btn-equal" onclick="calculate()">=</button>
             </div>
-
-            <!-- Calculator Keypad -->
-            <div class="keypad">
-                <button class="key key-action" onclick="clearCalculator()">C</button>
-                <button class="key key-action" onclick="deleteLastDigit()">⌫</button>
-                <button class="key key-op" onclick="appendOperator('%')">%</button>
-                <button class="key key-op" onclick="appendOperator('/')">÷</button>
-
-                <button class="key" onclick="appendNum('7')">7</button>
-                <button class="key" onclick="appendNum('8')">8</button>
-                <button class="key" onclick="appendNum('9')">9</button>
-                <button class="key key-op" onclick="appendOperator('*')">×</button>
-
-                <button class="key" onclick="appendNum('4')">4</button>
-                <button class="key" onclick="appendNum('5')">5</button>
-                <button class="key" onclick="appendNum('6')">6</button>
-                <button class="key key-op" onclick="appendOperator('-')">-</button>
-
-                <button class="key" onclick="appendNum('1')">1</button>
-                <button class="key" onclick="appendNum('2')">2</button>
-                <button class="key" onclick="appendNum('3')">3</button>
-                <button class="key key-op" onclick="appendOperator('+')">+</button>
-
-                <button class="key" onclick="appendNum('00')">00</button>
-                <button class="key" onclick="appendNum('0')">0</button>
-                <button class="key" onclick="appendNum('.')">.</button>
-                <button class="key key-equal" onclick="calculateResult()">=</button>
-            </div>
-        </section>
+        </div>
 
         <!-- Saved History Section -->
-        <section class="history-section">
+        <div class="history-section">
             <div class="history-header">
                 <h3>Saved History</h3>
-                <span class="count-badge" id="historyCount">0 Items</span>
+                <span id="historyCount">0 Items</span>
             </div>
-            <p class="swipe-hint">
-                <span>➔ Swipe Right to Edit</span>
-                <span>Swipe Left to Delete ➔</span>
-            </p>
 
-            <div class="history-list" id="historyContainer">
-                <!-- Saved items rendered here -->
-            </div>
-        </section>
+            <!-- Fix: Items පැහැදිලිව පෙනෙන සහ Swipe කළ හැකි List එක -->
+            <div id="historyContainer" class="history-list"></div>
+        </div>
     </div>
 
-    <!-- Edit Modal Window -->
+    <!-- Edit Modal -->
     <div id="editModal" class="modal-backdrop hidden">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>Edit Record</h3>
-                <button class="btn-close" onclick="closeEditModal()">&times;</button>
+        <div class="modal-box">
+            <h3>Edit History Item</h3>
+            <input type="hidden" id="editId">
+            <label>නම (Title)</label>
+            <input type="text" id="editName" class="modal-input">
+            <label>ගණන (Amount)</label>
+            <input type="number" step="0.01" id="editAmount" class="modal-input">
+            <div class="modal-actions">
+                <button onclick="closeEditModal()" class="btn-cancel">Cancel</button>
+                <button onclick="saveEdit()" class="btn-save">Save</button>
             </div>
-            <form onsubmit="handleSaveEdit(event)">
-                <input type="hidden" id="editItemId">
-                <div class="form-group">
-                    <label>Title / Description</label>
-                    <input type="text" id="editItemName" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Amount (LKR)</label>
-                    <input type="number" step="0.01" id="editItemAmount" class="form-control" required>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </div>
-            </form>
         </div>
     </div>
 
