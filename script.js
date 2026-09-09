@@ -44,7 +44,6 @@
     }
 
     function bindEvents() {
-        // Keypad Event Listener
         const buttonsContainer = document.querySelector('.buttons');
         if (buttonsContainer) {
             buttonsContainer.addEventListener('click', (e) => {
@@ -66,7 +65,6 @@
             });
         }
 
-        // Keyboard Shortcut Listener
         document.addEventListener('keydown', (e) => {
             const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
             if (activeTag === 'input' || activeTag === 'select') return;
@@ -83,7 +81,6 @@
             }
         });
 
-        // Save Button Action
         document.getElementById('save-btn').addEventListener('click', () => {
             const result = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
@@ -113,18 +110,15 @@
             calcNote.value = '';
         });
 
-        // Open History Modal
         document.getElementById('view-btn').addEventListener('click', () => {
             renderHistory();
             savedModal.classList.remove('hidden');
         });
 
-        // Close History Modal
         document.getElementById('close-modal-btn').addEventListener('click', () => {
             savedModal.classList.add('hidden');
         });
 
-        // Clear All History
         document.getElementById('clear-all-btn').addEventListener('click', () => {
             if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
                 savedRecords = [];
@@ -133,7 +127,6 @@
             }
         });
 
-        // History Items Click Events
         savedList.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.edit-btn');
             const deleteBtn = e.target.closest('.delete-btn');
@@ -164,7 +157,6 @@
             }
         });
 
-        // Edit Modal Controls
         document.getElementById('close-edit-btn').addEventListener('click', closeEdit);
         document.getElementById('cancel-edit-btn').addEventListener('click', closeEdit);
 
@@ -190,7 +182,6 @@
             renderHistory();
         });
 
-        // Open Export Modal
         const downloadBtn = document.getElementById('download-btn');
         if (downloadBtn) {
             downloadBtn.addEventListener('click', (e) => {
@@ -204,11 +195,9 @@
             });
         }
 
-        // Close Export Modal
         document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
         document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
 
-        // Confirm Export Action
         document.getElementById('confirm-download-btn').addEventListener('click', handleExport);
     }
 
@@ -278,7 +267,7 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
     }
 
-    // Export Logic with Default Browser / System Download Manager Triggering
+    // Export Logic with Direct Same-Tab Download Trigger
     async function handleExport() {
         const inputName = document.getElementById('export-filename').value.trim();
         const format = document.getElementById('export-format').value;
@@ -292,59 +281,61 @@
         const spinner = document.getElementById('download-spinner');
         const btnText = document.getElementById('download-btn-text');
 
-        // Start Loading Animation
+        // Loading animation ආරම්භය
         confirmBtn.disabled = true;
         spinner.classList.remove('hidden');
-        btnText.innerText = 'Preparing File...';
+        btnText.innerText = 'Downloading...';
 
         try {
             let fileData, mimeType, extension;
 
             if (format === 'pdf') {
                 await exportPDFDirect(inputName);
-                closeDownloadModal();
-                showToast('📥 File Processing via Browser!');
-                return;
-            } else if (format === 'word') {
-                fileData = getWordContent();
-                mimeType = 'application/msword';
-                extension = 'doc';
-            } else if (format === 'xml') {
-                fileData = getXMLContent();
-                mimeType = 'text/xml';
-                extension = 'xml';
-            } else if (format === 'html') {
-                fileData = getHTMLContent(inputName);
-                mimeType = 'text/html';
-                extension = 'html';
+            } else {
+                if (format === 'word') {
+                    fileData = getWordContent();
+                    mimeType = 'application/msword';
+                    extension = 'doc';
+                } else if (format === 'xml') {
+                    fileData = getXMLContent();
+                    mimeType = 'text/xml';
+                    extension = 'xml';
+                } else if (format === 'html') {
+                    fileData = getHTMLContent(inputName);
+                    mimeType = 'text/html';
+                    extension = 'html';
+                }
+
+                const fullFileName = `${inputName}.${extension}`;
+                triggerDirectDownload(fileData, mimeType, fullFileName);
             }
 
-            const fullFileName = `${inputName}.${extension}`;
-            triggerBrowserDownload(fileData, mimeType, fullFileName);
+            // සාර්ථක වූ පසු Modal එක වසා Reset කිරීම
+            setTimeout(() => {
+                closeDownloadModal();
+                showToast('🎉 File Downloaded Successfully!');
+                confirmBtn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.innerText = 'Download Now';
+            }, 1000);
 
-            closeDownloadModal();
-            showToast('📥 File Processing via Browser!');
         } catch (err) {
-            alert('Download එක අතරමැදදී අසාර්ථක විය: ' + err.message);
-        } finally {
-            // Stop Loading Animation
+            alert('Download එක අසාර්ථක විය: ' + err.message);
             confirmBtn.disabled = false;
             spinner.classList.add('hidden');
             btnText.innerText = 'Download Now';
         }
     }
 
-    // Direct Browser Download Dispatcher
-    function triggerBrowserDownload(content, mimeType, fileName) {
+    // අලුත් Tab open නොවී direct download වන Function එක
+    function triggerDirectDownload(content, mimeType, fileName) {
         const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
         const blobUrl = URL.createObjectURL(blob);
 
         const downloadLink = document.createElement('a');
         downloadLink.href = blobUrl;
         downloadLink.download = fileName;
-        downloadLink.target = '_blank';
-        downloadLink.rel = 'noopener noreferrer';
-
+        // target="_blank" ඉවත් කර ඇත - එකම Tab එකෙන් Download වේ
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
@@ -352,7 +343,7 @@
         setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
     }
 
-    // Direct PDF Export Generator
+    // Direct PDF Export (Same Tab)
     async function exportPDFDirect(fileName) {
         const tempContainer = document.createElement('div');
         tempContainer.style.padding = '20px';
@@ -398,7 +389,6 @@
             const link = document.createElement('a');
             link.href = pdfUrl;
             link.download = `${fileName}.pdf`;
-            link.target = '_blank';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
