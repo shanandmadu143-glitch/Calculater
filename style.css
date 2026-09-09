@@ -306,12 +306,12 @@ body {
     font-weight: bold;
 }
 
-.edit-modal-box {
+.edit-modal-box, .download-modal-box {
     height: auto;
     max-height: 90%;
 }
 
-.edit-inputs {
+.edit-inputs, .download-inputs {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -320,7 +320,7 @@ body {
     font-size: 13px;
 }
 
-.edit-inputs input {
+.edit-inputs input, .download-inputs input, .download-inputs select {
     background: #222;
     border: 1px solid #444;
     padding: 8px;
