@@ -95,11 +95,11 @@
             </div>
         </div>
 
-        <!-- Export Data Modal Overlay -->
+        <!-- Export Data Modal Overlay (Download or Share) -->
         <div id="download-modal" class="modal-overlay hidden z-high">
             <div class="modal-content download-modal-box animate-pop">
                 <div class="modal-header">
-                    <h3>📥 Export Data</h3>
+                    <h3>📥 Export / Share Data</h3>
                     <button id="close-download-btn" class="close-btn" type="button">✕</button>
                 </div>
                 <div class="download-inputs">
@@ -114,12 +114,18 @@
                         <option value="html">Printable Web Page (.html)</option>
                     </select>
                 </div>
-                <div class="modal-actions">
+                <div class="modal-actions modal-actions-grid">
                     <button id="confirm-download-btn" class="save-edit-btn download-action-btn" type="button">
                         <span class="btn-spinner hidden" id="download-spinner"></span>
-                        <span id="download-btn-text">Download Now</span>
+                        <span id="download-btn-text">Download</span>
                     </button>
-                    <button id="cancel-download-btn" class="cancel-btn" type="button">Cancel</button>
+                    <button id="confirm-share-btn" class="save-edit-btn share-action-btn" type="button">
+                        <span class="btn-spinner hidden" id="share-spinner"></span>
+                        <span id="share-btn-text">🔗 Share File</span>
+                    </button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button id="cancel-download-btn" class="cancel-btn full-width" type="button">Cancel</button>
                 </div>
             </div>
         </div>
