@@ -103,8 +103,8 @@
                     <button id="close-download-btn" class="close-btn" type="button">✕</button>
                 </div>
                 <div class="download-inputs">
-                    <label for="export-filename">File Name (ගොනුවේ නම):</label>
-                    <input type="text" id="export-filename" placeholder="Default: දිනය යෙදේ" autocomplete="off">
+                    <label for="export-filename">File Name (ගොනුවේ නම අනිවාර්යයි):</label>
+                    <input type="text" id="export-filename" placeholder="උදා: My_Calculations" autocomplete="off">
                     
                     <label for="export-format">Format (ආකෘතිය):</label>
                     <select id="export-format">
@@ -115,7 +115,10 @@
                     </select>
                 </div>
                 <div class="modal-actions">
-                    <button id="confirm-download-btn" class="save-edit-btn download-action-btn" type="button">Download Now</button>
+                    <button id="confirm-download-btn" class="save-edit-btn download-action-btn" type="button">
+                        <span class="btn-spinner hidden" id="download-spinner"></span>
+                        <span id="download-btn-text">Download Now</span>
+                    </button>
                     <button id="cancel-download-btn" class="cancel-btn" type="button">Cancel</button>
                 </div>
             </div>
