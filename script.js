@@ -198,10 +198,10 @@
         document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
         document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
 
-        // Download Event Listener
+        // Download Event
         document.getElementById('confirm-download-btn').addEventListener('click', () => handleExport(false));
 
-        // Share Event Listener
+        // Share Event
         document.getElementById('confirm-share-btn').addEventListener('click', () => handleExport(true));
     }
 
@@ -285,7 +285,6 @@
         const spinner = isShare ? document.getElementById('share-spinner') : document.getElementById('download-spinner');
         const btnText = isShare ? document.getElementById('share-btn-text') : document.getElementById('download-btn-text');
 
-        // Loading state
         confirmBtn.disabled = true;
         spinner.classList.remove('hidden');
         btnText.innerText = isShare ? 'Preparing...' : 'Downloading...';
@@ -314,10 +313,19 @@
             const fullFileName = `${inputName}.${extension}`;
 
             if (isShare) {
-                // Share via Web Share API
                 const file = new File([blob], fullFileName, { type: mimeType });
-                
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+
+                // Check Web Share API File support
+                let fileShareSupported = false;
+                if (navigator.canShare) {
+                    try {
+                        fileShareSupported = navigator.canShare({ files: [file] });
+                    } catch (e) {
+                        fileShareSupported = false;
+                    }
+                }
+
+                if (fileShareSupported && navigator.share) {
                     await navigator.share({
                         files: [file],
                         title: inputName,
@@ -325,11 +333,23 @@
                     });
                     showToast('🎉 Shared Successfully!');
                     closeDownloadModal();
+                } else if (navigator.share) {
+                    // Fallback: Share text if file sharing isn't supported by browser
+                    let textSummary = `Vasana Calculator - ${inputName}\n`;
+                    savedRecords.forEach(r => {
+                        textSummary += `${r.note}: ${r.expression} (${r.date})\n`;
+                    });
+                    await navigator.share({
+                        title: inputName,
+                        text: textSummary
+                    });
+                    showToast('🎉 Shared Text Summary Successfully!');
+                    closeDownloadModal();
                 } else {
-                    alert('ඔබගේ Device/Browser එක මගින් Direct File Share කිරීම සහාය නොදක්වයි. Download කිරීම භාවිත කරන්න.');
+                    alert('ඔබගේ Browser එක මගින් Share feature එක සහාය නොදක්වයි (HTTPS හරහා භාවිතා කරන්න). Download කිරීම භාවිතා කරන්න.');
                 }
             } else {
-                // Direct Download in same tab
+                // Direct Download
                 const blobUrl = URL.createObjectURL(blob);
                 const downloadLink = document.createElement('a');
                 downloadLink.href = blobUrl;
@@ -345,18 +365,16 @@
             }
 
         } catch (err) {
-            if (err.name !== 'AbortError') { // Share cancel කළ විට error නොපෙන්වීමට
+            if (err.name !== 'AbortError') {
                 alert('ක්‍රියාවලිය අසාර්ථක විය: ' + err.message);
             }
         } finally {
-            // Reset Button State
             confirmBtn.disabled = false;
             spinner.classList.add('hidden');
             btnText.innerText = isShare ? '🔗 Share File' : 'Download';
         }
     }
 
-    // Generate PDF Blob
     async function generatePDFBlob() {
         const tempContainer = document.createElement('div');
         tempContainer.style.padding = '20px';
