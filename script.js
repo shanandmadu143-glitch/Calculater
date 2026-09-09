@@ -243,26 +243,57 @@
 
     function renderHistory() {
         savedList.innerHTML = '';
+
         if (savedRecords.length === 0) {
-            savedList.innerHTML = '<p style="color:#888; text-align:center; margin-top:20px;">තවම කිසිදු දත්තයක් Save කර නොමැත.</p>';
+            savedList.innerHTML = `
+                <div class="empty-history-state">
+                    <div class="empty-icon">📂</div>
+                    <p>තවම කිසිදු දත්තයක් Save කර නොමැත.</p>
+                </div>
+            `;
             return;
         }
 
+        let totalSum = 0;
+        savedRecords.forEach(r => {
+            const num = parseFloat(r.expression);
+            if (!isNaN(num)) totalSum += num;
+        });
+
+        const summaryBar = document.createElement('div');
+        summaryBar.className = 'history-summary-bar';
+        summaryBar.innerHTML = `
+            <div class="summary-card">
+                <span class="summary-label">Total Items</span>
+                <span class="summary-value">${savedRecords.length} Records</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Total Amount</span>
+                <span class="summary-value">${Math.round(totalSum * 1e4) / 1e4}</span>
+            </div>
+        `;
+        savedList.appendChild(summaryBar);
+
         savedRecords.slice().reverse().forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'saved-item';
-            div.innerHTML = `
-                <div class="saved-item-info" data-expr="${escapeHTML(String(item.expression))}" title="Click to copy to display">
-                    <div class="saved-item-title">${escapeHTML(item.note)}</div>
-                    <div style="color:#aaa; font-size:11px;">${item.date} | ${item.time}</div>
-                    <div class="saved-item-result">${escapeHTML(String(item.expression))}</div>
+            const card = document.createElement('div');
+            card.className = 'saved-card';
+            card.innerHTML = `
+                <div class="saved-card-header">
+                    <span class="saved-card-title" title="${escapeHTML(item.note)}">${escapeHTML(item.note)}</span>
+                    <span class="saved-card-date">🕒 ${item.date} | ${item.time}</span>
                 </div>
-                <div>
-                    <button type="button" class="action-btn edit-btn" data-id="${item.id}">✏️ Edit</button>
-                    <button type="button" class="action-btn delete-btn" data-id="${item.id}">🗑️ Cut</button>
+                
+                <div class="saved-card-body saved-item-info" data-expr="${escapeHTML(String(item.expression))}" title="Click to Load into Calculator">
+                    <span class="saved-card-value">${escapeHTML(String(item.expression))}</span>
+                    <span class="click-copy-tag">↙ Use Value</span>
+                </div>
+
+                <div class="saved-card-actions">
+                    <button type="button" class="card-action-btn btn-edit-card edit-btn" data-id="${item.id}">✏️ Edit</button>
+                    <button type="button" class="card-action-btn btn-delete-card delete-btn" data-id="${item.id}">🗑️ Delete</button>
                 </div>
             `;
-            savedList.appendChild(div);
+            savedList.appendChild(card);
         });
     }
 
@@ -336,7 +367,7 @@
                     await navigator.share({
                         files: [file],
                         title: inputName,
-                        text: 'WM Calculator Data'
+                        text: 'Vasana Calculator Data'
                     });
                     showToast('🎉 Shared Successfully!');
                     closeDownloadModal();
