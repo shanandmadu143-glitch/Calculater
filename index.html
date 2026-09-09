@@ -3,136 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vasana Calculator Pro</title>
+    <title>Saved History</title>
     <link rel="stylesheet" href="style.css">
-    <!-- html2pdf.js for PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Font for Clean UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="calculator-card">
-        <!-- Live Date & Time Display -->
-        <div class="datetime-container">
-            <span id="current-date">----/--/--</span>
-            <span id="current-time">00:00:00 AM</span>
-        </div>
-
-        <!-- App Header Title -->
-        <h1 class="app-title">Vasana Calculator</h1>
-
-        <!-- Note Input Field & Save Button -->
-        <div class="note-container">
-            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." maxlength="50" autocomplete="off">
-            <button id="save-btn" type="button" title="Save Calculation">💾 Save</button>
-        </div>
-
-        <!-- Calculator Display Screen -->
-        <div class="display-container">
-            <input type="text" id="display" placeholder="0" readonly autocomplete="off">
-        </div>
-
-        <!-- Calculator Keypad Buttons -->
-        <div class="buttons">
-            <button type="button" class="btn btn-action" data-action="clear">C</button>
-            <button type="button" class="btn btn-action" data-action="delete">DEL</button>
-            <button type="button" class="btn btn-operator" data-val="/">÷</button>
-            <button type="button" class="btn btn-operator" data-val="*">×</button>
-
-            <button type="button" class="btn" data-val="7">7</button>
-            <button type="button" class="btn" data-val="8">8</button>
-            <button type="button" class="btn" data-val="9">9</button>
-            <button type="button" class="btn btn-operator" data-val="-">-</button>
-
-            <button type="button" class="btn" data-val="4">4</button>
-            <button type="button" class="btn" data-val="5">5</button>
-            <button type="button" class="btn" data-val="6">6</button>
-            <button type="button" class="btn btn-operator" data-val="+">+</button>
-
-            <button type="button" class="btn" data-val="1">1</button>
-            <button type="button" class="btn" data-val="2">2</button>
-            <button type="button" class="btn" data-val="3">3</button>
-            <button type="button" class="btn btn-equal" data-action="calculate">=</button>
-
-            <button type="button" class="btn btn-zero" data-val="0">0</button>
-            <button type="button" class="btn" data-val=".">.</button>
-        </div>
-
-        <!-- Action Control Buttons -->
-        <div class="extra-controls">
-            <button id="view-btn" class="btn-extra" type="button">👁️ View Saved</button>
-            <button id="download-btn" class="btn-extra download-btn" type="button">📥 Export / Share</button>
-        </div>
-
-        <!-- Saved History Modal Overlay -->
-        <div id="saved-modal" class="modal-overlay hidden">
-            <div class="modal-content animate-pop">
-                <div class="modal-header">
-                    <h3>📜 Saved History</h3>
-                    <button id="close-modal-btn" class="close-btn" type="button">✕</button>
-                </div>
-                <div id="saved-list" class="saved-list"></div>
-                <button id="clear-all-btn" class="clear-history-btn" type="button">Clear All History</button>
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Saved History</h1>
+                <span class="count-badge" id="itemCount">0 Items</span>
             </div>
-        </div>
+            <p class="hint-text">
+                <span class="hint-edit">➔ Swipe Right to Edit</span>
+                <span class="hint-delete">Swipe Left to Delete ➔</span>
+            </p>
+        </header>
 
-        <!-- Edit Item Modal Overlay -->
-        <div id="edit-modal" class="modal-overlay hidden z-high">
-            <div class="modal-content edit-modal-box animate-pop">
-                <div class="modal-header">
-                    <h3>✏️ Edit Record</h3>
-                    <button id="close-edit-btn" class="close-btn" type="button">✕</button>
+        <!-- Dynamic List Container -->
+        <main class="history-container" id="historyContainer">
+            <!-- Items rendered via JavaScript -->
+        </main>
+    </div>
+
+    <!-- Professional Edit Modal -->
+    <div id="editModal" class="modal-backdrop hidden" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Edit Record</h3>
+                <button class="btn-close" onclick="closeEditModal()" aria-label="Close">&times;</button>
+            </div>
+            
+            <form id="editForm" onsubmit="handleSaveEdit(event)">
+                <input type="hidden" id="editItemId">
+                
+                <div class="form-group">
+                    <label for="editItemName">Description / Title</label>
+                    <input type="text" id="editItemName" class="form-control" placeholder="Enter title" required autocomplete="off">
                 </div>
-                <div class="edit-inputs">
-                    <label for="edit-note">විස්තරය / නම:</label>
-                    <input type="text" id="edit-note" placeholder="විස්තරය" maxlength="50" autocomplete="off">
-                    <label for="edit-expression">ගණන / අගය:</label>
-                    <input type="text" id="edit-expression" placeholder="අගය" autocomplete="off">
+
+                <div class="form-group">
+                    <label for="editItemAmount">Amount (LKR)</label>
+                    <input type="number" step="0.01" id="editItemAmount" class="form-control" placeholder="0.00" required>
                 </div>
+
                 <div class="modal-actions">
-                    <button id="save-edit-btn" class="save-edit-btn" type="button">Save Changes</button>
-                    <button id="cancel-edit-btn" class="cancel-btn" type="button">Cancel</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Export Data Modal Overlay -->
-        <div id="download-modal" class="modal-overlay hidden z-high">
-            <div class="modal-content download-modal-box animate-pop">
-                <div class="modal-header">
-                    <h3>📥 Export / Share Data</h3>
-                    <button id="close-download-btn" class="close-btn" type="button">✕</button>
-                </div>
-                <div class="download-inputs">
-                    <label for="export-filename">File Name (ගොනුවේ නම):</label>
-                    <input type="text" id="export-filename" placeholder="උදා: My_Calculations" autocomplete="off">
-                    
-                    <label for="export-format">Format (ආකෘතිය):</label>
-                    <select id="export-format">
-                        <option value="pdf">PDF Document (.pdf)</option>
-                        <option value="word">Word Document (.doc)</option>
-                        <option value="xml">XML Document (.xml)</option>
-                        <option value="html">Printable Web Page (.html)</option>
-                    </select>
-                </div>
-                <div class="modal-actions modal-actions-grid">
-                    <button id="confirm-download-btn" class="save-edit-btn download-action-btn" type="button">
-                        <span class="btn-spinner hidden" id="download-spinner"></span>
-                        <span id="download-btn-text">Download</span>
-                    </button>
-                    <button id="confirm-share-btn" class="save-edit-btn share-action-btn" type="button">
-                        <span class="btn-spinner hidden" id="share-spinner"></span>
-                        <span id="share-btn-text">🔗 Share File</span>
-                    </button>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button id="cancel-download-btn" class="cancel-btn full-width" type="button">Cancel</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Toast Notification Message -->
-        <div id="toast-message" class="toast hidden">
-            🎉 Operation Completed Successfully!
+            </form>
         </div>
     </div>
 
