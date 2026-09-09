@@ -1,28 +1,14 @@
-:root {
-    --bg-main: #0a0c10;
-    --bg-card: #14171f;
-    --bg-input: #1c202b;
-    --border: rgba(255, 255, 255, 0.08);
-    --text-main: #f3f4f6;
-    --text-muted: #9ca3af;
-    --accent-blue: #2563eb;
-    --accent-green: #10b981;
-    --accent-orange: #f59e0b;
-    --accent-red: #ef4444;
-    --radius: 14px;
-}
-
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
 }
 
 body {
-    background-color: var(--bg-main);
-    color: var(--text-main);
+    background-color: #0d0a12;
+    color: #ffffff;
     display: flex;
     justify-content: center;
     min-height: 100vh;
@@ -31,51 +17,51 @@ body {
 .app-container {
     width: 100%;
     max-width: 480px;
-    background-color: var(--bg-card);
+    background-color: #120e1a;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
 
 /* Calculator Section */
-.calculator-section {
+.calculator-card {
     padding: 16px;
-    background: #11141c;
-    border-bottom: 1px solid var(--border);
+    background: #1a1426;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.calc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.calc-header h2 { font-size: 18px; font-weight: 700; }
-.status-badge { font-size: 11px; background: rgba(16, 185, 129, 0.15); color: var(--accent-green); padding: 2px 8px; border-radius: 12px; }
-
-.display-box {
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+.calc-display {
+    background: #1e182a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
     padding: 14px;
     text-align: right;
     margin-bottom: 12px;
 }
 
-.expression-display { font-size: 14px; color: var(--text-muted); min-height: 20px; overflow-x: auto; }
-.result-display { font-size: 28px; font-weight: 700; color: var(--accent-green); margin-top: 4px; }
+.calc-expression {
+    font-size: 14px;
+    color: #a09cb0;
+    min-height: 20px;
+}
 
-.input-note-group {
+.calc-result {
+    font-size: 26px;
+    font-weight: 700;
+    color: #00ff66;
+    margin-top: 4px;
+}
+
+.save-input-group {
     display: flex;
     gap: 8px;
     margin-bottom: 12px;
 }
 
-.note-input {
+.save-input-group input {
     flex: 1;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
+    background: #1e182a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     padding: 10px 12px;
     color: #fff;
@@ -83,8 +69,8 @@ body {
     outline: none;
 }
 
-.btn-save-record {
-    background: var(--accent-blue);
+.save-input-group button {
+    background: #2563eb;
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -93,31 +79,28 @@ body {
     cursor: pointer;
 }
 
-/* Keypad Grid */
-.keypad {
+.calc-keypad {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
 }
 
-.key {
-    background: var(--bg-input);
-    border: 1px solid var(--border);
+.btn-key {
+    background: #1e182a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: #fff;
     font-size: 18px;
     font-weight: 600;
-    padding: 14px 0;
-    border-radius: 10px;
+    padding: 12px 0;
+    border-radius: 8px;
     cursor: pointer;
-    transition: active 0.1s;
 }
 
-.key:active { opacity: 0.7; transform: scale(0.98); }
-.key-action { color: var(--accent-orange); }
-.key-op { color: var(--accent-blue); }
-.key-equal { background: var(--accent-blue); color: #fff; }
+.btn-action { color: #f59e0b; }
+.btn-op { color: #2563eb; }
+.btn-equal { background: #2563eb; color: #fff; }
 
-/* Saved History Section */
+/* History Section */
 .history-section {
     padding: 16px;
     flex: 1;
@@ -127,58 +110,120 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 12px;
 }
 
-.count-badge { font-size: 12px; color: var(--text-muted); }
-.swipe-hint { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin: 8px 0; }
+.history-header h3 {
+    font-size: 16px;
+}
 
+.history-header span {
+    font-size: 12px;
+    color: #a09cb0;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Item Card Layout Fix (නම සහ ගණන කැපී නොයන ලෙස) */
 .card-wrapper {
     position: relative;
-    margin-bottom: 10px;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    background: #0d0f14;
+    background: #1a1426;
 }
 
-.swipe-action {
+.swipe-indicator {
     position: absolute;
-    top: 0; bottom: 0; width: 100%;
-    display: flex; align-items: center; padding: 0 16px;
-    font-weight: 600; font-size: 13px; color: #fff;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-weight: 700;
+    font-size: 13px;
+    color: #fff;
 }
-.swipe-edit { background: var(--accent-blue); justify-content: flex-start; }
-.swipe-delete { background: var(--accent-red); justify-content: flex-end; }
 
-.history-card {
+.swipe-edit { background-color: #2563eb; justify-content: flex-start; }
+.swipe-delete { background-color: #dc2626; justify-content: flex-end; }
+
+.saved-card {
     position: relative;
     z-index: 2;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
+    background: #1e182a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     touch-action: pan-y;
+    transition: transform 0.15s ease-out;
 }
 
-.card-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
-.card-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.card-amount { font-size: 15px; font-weight: 700; color: var(--accent-green); }
+.card-left {
+    flex: 1;
+    margin-right: 12px;
+    min-width: 0; /* Text ellipsis සඳහා අවශ්‍ය වේ */
+}
+
+.saved-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* දිගු නමක් වූ විට ... ලෙස වැටේ */
+}
+
+.saved-card-date {
+    font-size: 11px;
+    color: #7d7890;
+    margin-top: 2px;
+}
+
+.card-right {
+    flex-shrink: 0;
+}
+
+.saved-card-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #00ff66; /* ගණන/අගය පැහැදිලි කොළ පාටින් */
+    font-family: monospace;
+}
 
 /* Modal */
 .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-    display: flex; justify-content: center; align-items: center; z-index: 100;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 100;
 }
+
 .hidden { display: none; }
-.modal-card { background: var(--bg-card); width: 88%; max-width: 380px; padding: 20px; border-radius: 14px; border: 1px solid var(--border); }
-.modal-header { display: flex; justify-content: space-between; margin-bottom: 14px; }
-.btn-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
-.form-group { margin-bottom: 12px; }
-.form-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
-.form-control { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: #fff; }
+
+.modal-box {
+    background: #1e182a;
+    width: 88%; max-width: 360px;
+    padding: 20px; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.modal-box h3 { margin-bottom: 12px; font-size: 16px; }
+.modal-box label { font-size: 11px; color: #a09cb0; display: block; margin-top: 8px; }
+.modal-input {
+    width: 100%; padding: 8px 10px; margin-top: 4px;
+    background: #120e1a; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px; color: #fff; font-size: 14px;
+}
+
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-.btn { padding: 8px 14px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
-.btn-secondary { background: var(--bg-input); color: #fff; }
-.btn-primary { background: var(--accent-blue); color: #fff; }
+.modal-actions button { padding: 8px 12px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+.btn-cancel { background: #332d42; color: #fff; }
+.btn-save { background: #2563eb; color: #fff; }
