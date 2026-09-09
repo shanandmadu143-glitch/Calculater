@@ -43,6 +43,14 @@
         }
     }
 
+    function getCurrentDateFormatted() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function bindEvents() {
         const buttonsContainer = document.querySelector('.buttons');
         if (buttonsContainer) {
@@ -315,7 +323,6 @@
             if (isShare) {
                 const file = new File([blob], fullFileName, { type: mimeType });
 
-                // Check Web Share API File support
                 let fileShareSupported = false;
                 if (navigator.canShare) {
                     try {
@@ -334,11 +341,12 @@
                     showToast('🎉 Shared Successfully!');
                     closeDownloadModal();
                 } else if (navigator.share) {
-                    // Fallback: Share text if file sharing isn't supported by browser
-                    let textSummary = `Vasana Calculator - ${inputName}\n`;
+                    let textSummary = `${getCurrentDateFormatted()} - Data Enter History\n\n`;
                     savedRecords.forEach(r => {
                         textSummary += `${r.note}: ${r.expression} (${r.date})\n`;
                     });
+                    textSummary += `\nApplication Make By :- WAYL Ranaweera`;
+                    
                     await navigator.share({
                         title: inputName,
                         text: textSummary
@@ -349,7 +357,6 @@
                     alert('ඔබගේ Browser එක මගින් Share feature එක සහාය නොදක්වයි (HTTPS හරහා භාවිතා කරන්න). Download කිරීම භාවිතා කරන්න.');
                 }
             } else {
-                // Direct Download
                 const blobUrl = URL.createObjectURL(blob);
                 const downloadLink = document.createElement('a');
                 downloadLink.href = blobUrl;
@@ -376,6 +383,7 @@
     }
 
     async function generatePDFBlob() {
+        const currentDate = getCurrentDateFormatted();
         const tempContainer = document.createElement('div');
         tempContainer.style.padding = '20px';
         tempContainer.style.fontFamily = 'Arial, sans-serif';
@@ -393,7 +401,7 @@
         });
 
         tempContainer.innerHTML = `
-            <h2 style="text-align: center; color: #cc7000;">Vasana Calculator Saved History</h2>
+            <h2 style="text-align: center; color: #cc7000;">${currentDate} - Data Enter History</h2>
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                 <thead>
                     <tr style="background-color: #f4f4f4;">
@@ -405,6 +413,9 @@
                 </thead>
                 <tbody>${tableRows}</tbody>
             </table>
+            <div style="margin-top: 30px; text-align: right; font-size: 11px; color: #666; font-style: italic;">
+                Application Make By :- WAYL Ranaweera
+            </div>
         `;
 
         if (window.html2pdf) {
@@ -420,7 +431,9 @@
     }
 
     function getXMLContent() {
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<VasanaCalculatorRecords>\n`;
+        const currentDate = getCurrentDateFormatted();
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xml += `<DataEnterHistory title="${currentDate} - Data Enter History" createdBy="WAYL Ranaweera">\n`;
         savedRecords.forEach(r => {
             xml += `  <Record>\n`;
             xml += `    <ID>${r.id}</ID>\n`;
@@ -430,11 +443,13 @@
             xml += `    <Time>${r.time}</Time>\n`;
             xml += `  </Record>\n`;
         });
-        xml += `</VasanaCalculatorRecords>`;
+        xml += `  <Footer>Application Make By :- WAYL Ranaweera</Footer>\n`;
+        xml += `</DataEnterHistory>`;
         return xml;
     }
 
     function getWordContent() {
+        const currentDate = getCurrentDateFormatted();
         let htmlContent = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
@@ -446,10 +461,11 @@
                 th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
                 th { background-color: #ff8c00; color: white; }
                 tr:nth-child(even) { background-color: #f2f2f2; }
+                .footer-text { margin-top: 30px; text-align: right; font-size: 11px; color: #666; font-style: italic; }
             </style>
         </head>
         <body>
-            <h2>Vasana Calculator Saved Records</h2>
+            <h2>${currentDate} - Data Enter History</h2>
             <table>
                 <thead>
                     <tr>
@@ -476,6 +492,9 @@
         htmlContent += `
                 </tbody>
             </table>
+            <div class="footer-text">
+                Application Make By :- WAYL Ranaweera
+            </div>
         </body>
         </html>
         `;
@@ -483,6 +502,7 @@
     }
 
     function getHTMLContent(fileName) {
+        const currentDate = getCurrentDateFormatted();
         let tableRows = '';
         savedRecords.forEach(r => {
             tableRows += `
@@ -508,10 +528,11 @@
                     th, td { border: 1px solid #ccc; padding: 10px 14px; text-align: left; font-size: 14px; }
                     th { background-color: #f4f4f4; }
                     tr:nth-child(even) { background-color: #fafafa; }
+                    .footer-text { margin-top: 30px; text-align: right; font-size: 12px; color: #666; font-style: italic; }
                 </style>
             </head>
             <body>
-                <h2>Vasana Calculator Saved History</h2>
+                <h2>${currentDate} - Data Enter History</h2>
                 <table>
                     <thead>
                         <tr>
@@ -525,6 +546,9 @@
                         ${tableRows}
                     </tbody>
                 </table>
+                <div class="footer-text">
+                    Application Make By :- WAYL Ranaweera
+                </div>
             </body>
             </html>
         `;
