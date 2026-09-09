@@ -30,7 +30,6 @@ body {
                 inset 0 1px 2px rgba(255, 255, 255, 0.2);
     width: 100%;
     max-width: 375px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .datetime-container {
@@ -44,8 +43,6 @@ body {
     font-size: 12px;
     font-weight: 700;
     margin-bottom: 14px;
-    letter-spacing: 0.5px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
 }
 
 .app-title {
@@ -59,7 +56,6 @@ body {
     -webkit-text-fill-color: transparent;
     animation: textGlow 3s linear infinite;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
 }
 
 @keyframes textGlow {
@@ -82,13 +78,11 @@ body {
     padding: 10px 12px;
     font-size: 13px;
     user-select: text;
-    transition: all 0.25s ease;
 }
 
 #calc-note:focus {
     outline: none;
     border-color: #ff8c00;
-    box-shadow: 0 0 12px rgba(255, 140, 0, 0.4);
 }
 
 #save-btn {
@@ -99,17 +93,6 @@ body {
     border-radius: 10px;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.35);
-    transition: all 0.2s ease;
-}
-
-#save-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.5);
-}
-
-#save-btn:active {
-    transform: translateY(1px);
 }
 
 .display-container {
@@ -126,7 +109,6 @@ body {
     font-size: 30px;
     text-align: right;
     padding: 10px 16px;
-    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 255, 102, 0.08);
     user-select: text;
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
@@ -147,31 +129,17 @@ body {
     font-size: 20px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
-    transition: all 0.15s ease;
     touch-action: manipulation;
-}
-
-.btn:hover {
-    filter: brightness(1.25);
-    transform: translateY(-2px);
-}
-
-.btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .btn-operator {
     background: linear-gradient(145deg, #ff9f1c, #d47a00);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(255, 159, 28, 0.35);
 }
 
 .btn-action {
     background: linear-gradient(145deg, #e63946, #b01825);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(230, 57, 70, 0.35);
 }
 
 .btn-equal {
@@ -179,7 +147,6 @@ body {
     color: #fff;
     grid-row: span 2;
     height: 114px;
-    box-shadow: 0 4px 15px rgba(46, 196, 182, 0.45);
 }
 
 .btn-zero {
@@ -201,27 +168,14 @@ body {
     color: #fff;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s ease;
     font-size: 13px;
-    backdrop-filter: blur(8px);
-}
-
-.btn-extra:hover {
-    background: rgba(255,255,255,0.18);
-    transform: translateY(-2px);
 }
 
 .download-btn {
     background: linear-gradient(145deg, #ff8c00, #cc7000);
     border: none;
-    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.35);
 }
 
-.download-btn:hover {
-    box-shadow: 0 6px 18px rgba(255, 140, 0, 0.55);
-}
-
-/* Modal Overlay & Popups */
 .modal-overlay {
     position: absolute;
     inset: 0;
@@ -233,7 +187,6 @@ body {
     align-items: center;
     z-index: 100;
     padding: 14px;
-    transition: opacity 0.25s ease;
 }
 
 .modal-overlay.z-high {
@@ -249,7 +202,6 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.95), 0 0 25px rgba(255, 183, 3, 0.25);
 }
 
 .animate-pop {
@@ -257,14 +209,8 @@ body {
 }
 
 @keyframes popupScale {
-    from {
-        opacity: 0;
-        transform: scale(0.85);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 .hidden {
@@ -293,12 +239,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
-}
-
-.close-btn:hover {
-    background: #ff4d4d;
-    color: white;
 }
 
 .saved-list {
@@ -307,7 +247,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-right: 4px;
 }
 
 .saved-item {
@@ -320,11 +259,6 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: background 0.2s;
-}
-
-.saved-item:hover {
-    background: rgba(255, 255, 255, 0.09);
 }
 
 .saved-item-info {
@@ -355,11 +289,6 @@ body {
     font-weight: bold;
     color: white;
     margin-left: 4px;
-    transition: transform 0.15s;
-}
-
-.action-btn:hover {
-    transform: scale(1.05);
 }
 
 .edit-btn { background: #ff9f1c; }
@@ -374,12 +303,10 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
-    box-shadow: 0 4px 10px rgba(230, 57, 70, 0.35);
 }
 
 .edit-modal-box, .download-modal-box {
     height: auto;
-    max-height: 90%;
 }
 
 .edit-inputs, .download-inputs {
@@ -398,7 +325,6 @@ body {
     border-radius: 8px;
     color: #fff;
     user-select: text;
-    transition: border 0.2s;
 }
 
 .edit-inputs input:focus, .download-inputs input:focus, .download-inputs select:focus {
@@ -447,7 +373,6 @@ body {
     cursor: not-allowed;
 }
 
-/* Spinner Animation for Download Button */
 .btn-spinner {
     width: 14px;
     height: 14px;
@@ -479,10 +404,4 @@ body {
     border: 1.5px solid #00ff66;
     z-index: 200;
     width: 85%;
-    animation: toastPop 0.3s ease;
-}
-
-@keyframes toastPop {
-    from { transform: translate(-50%, -40%) scale(0.9); opacity: 0; }
-    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
