@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    let display, calcNote, toast, savedModal, editModal, savedList;
+    let display, calcNote, toast, savedModal, editModal, downloadModal, savedList;
     let savedRecords = [];
     let editingRecordId = null;
 
@@ -15,6 +15,7 @@
         toast = document.getElementById('toast-message');
         savedModal = document.getElementById('saved-modal');
         editModal = document.getElementById('edit-modal');
+        downloadModal = document.getElementById('download-modal');
         savedList = document.getElementById('saved-list');
 
         try {
@@ -66,7 +67,8 @@
         document.addEventListener('keydown', (e) => {
             if (document.activeElement === calcNote || 
                 document.activeElement === document.getElementById('edit-note') || 
-                document.activeElement === document.getElementById('edit-expression')) {
+                document.activeElement === document.getElementById('edit-expression') ||
+                document.activeElement === document.getElementById('export-filename')) {
                 return;
             }
 
@@ -188,8 +190,21 @@
             renderHistory();
         });
 
-        // Download XML
-        document.getElementById('download-btn').addEventListener('click', exportXML);
+        // Open Download Popup Modal
+        document.getElementById('download-btn').addEventListener('click', () => {
+            if (savedRecords.length === 0) {
+                alert('Download කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
+                return;
+            }
+            downloadModal.classList.remove('hidden');
+        });
+
+        // Close Download Popup
+        document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
+        document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
+
+        // Confirm Download
+        document.getElementById('confirm-download-btn').addEventListener('click', handleExport);
     }
 
     function appendCharacter(char) {
@@ -250,37 +265,160 @@
         editModal.classList.add('hidden');
     }
 
+    function closeDownloadModal() {
+        downloadModal.classList.add('hidden');
+    }
+
     function saveToStorage() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
     }
 
-    function exportXML() {
-        if (savedRecords.length === 0) {
-            alert('Download කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
-            return;
-        }
+    function handleExport() {
+        const inputName = document.getElementById('export-filename').value.trim();
+        const format = document.getElementById('export-format').value;
 
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
 
+        const fileName = inputName ? inputName : `Vasana_Calculator_${year}-${month}-${day}`;
+
+        if (format === 'xml') {
+            exportXML(fileName);
+        } else if (format === 'word') {
+            exportWord(fileName);
+        } else if (format === 'pdf') {
+            exportPDF(fileName);
+        }
+
+        closeDownloadModal();
+    }
+
+    function exportXML(fileName) {
         let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<VasanaCalculatorRecords>\n`;
         savedRecords.forEach(r => {
             xml += `  <Record>\n`;
             xml += `    <ID>${r.id}</ID>\n`;
-            xml += `    <Date>${r.date}</Date>\n`;
-            xml += `    <Time>${r.time}</Time>\n`;
             xml += `    <Description>${escapeHTML(r.note)}</Description>\n`;
             xml += `    <Value>${escapeHTML(String(r.expression))}</Value>\n`;
+            xml += `    <Date>${r.date}</Date>\n`;
+            xml += `    <Time>${r.time}</Time>\n`;
             xml += `  </Record>\n`;
         });
         xml += `</VasanaCalculatorRecords>`;
 
-        const blob = new Blob([xml], { type: 'text/xml;charset=utf-8;' });
+        downloadBlob(xml, 'text/xml;charset=utf-8;', `${fileName}.xml`);
+    }
+
+    function exportWord(fileName) {
+        let htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                h2 { color: #d47a00; text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                th { background-color: #ff8c00; color: white; }
+                tr:nth-child(even) { background-color: #f2f2f2; }
+            </style>
+        </head>
+        <body>
+            <h2>Vasana Calculator Saved Records</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>විස්තරය / නම (Name/Note)</th>
+                        <th>ගණන / අගය (Value)</th>
+                        <th>දිනය (Date)</th>
+                        <th>වෙලාව (Time)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        savedRecords.forEach(r => {
+            htmlContent += `
+                <tr>
+                    <td>${escapeHTML(r.note)}</td>
+                    <td><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td>${r.date}</td>
+                    <td>${r.time}</td>
+                </tr>
+            `;
+        });
+
+        htmlContent += `
+                </tbody>
+            </table>
+        </body>
+        </html>
+        `;
+
+        downloadBlob(htmlContent, 'application/msword;charset=utf-8;', `${fileName}.doc`);
+    }
+
+    function exportPDF(fileName) {
+        const printWindow = window.open('', '_blank');
+        let tableRows = '';
+        savedRecords.forEach(r => {
+            tableRows += `
+                <tr>
+                    <td>${escapeHTML(r.note)}</td>
+                    <td><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td>${r.date}</td>
+                    <td>${r.time}</td>
+                </tr>
+            `;
+        });
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${escapeHTML(fileName)}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+                    h2 { text-align: center; color: #cc7000; border-bottom: 2px solid #cc7000; padding-bottom: 10px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-size: 13px; }
+                    th { background-color: #f4f4f4; }
+                </style>
+            </head>
+            <body>
+                <h2>Vasana Calculator Saved History</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>විස්තරය / නම (Name/Note)</th>
+                            <th>ගණන / අගය (Value)</th>
+                            <th>දිනය (Date)</th>
+                            <th>වෙලාව (Time)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        window.close();
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    function downloadBlob(content, type, fullFileName) {
+        const blob = new Blob([content], { type: type });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `Vasana_Calculator_${year}-${month}-${day}.xml`;
+        link.download = fullFileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
