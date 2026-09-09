@@ -199,6 +199,7 @@
                     alert('Download කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
                     return;
                 }
+                document.getElementById('export-filename').value = '';
                 downloadModal.classList.remove('hidden');
             });
         }
@@ -277,32 +278,78 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
     }
 
-    function handleExport() {
+    // Export Logic with File Location Picker & Loading Animation
+    async function handleExport() {
         const inputName = document.getElementById('export-filename').value.trim();
         const format = document.getElementById('export-format').value;
 
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-
-        const fileName = inputName ? inputName : `Vasana_Calculator_${year}-${month}-${day}`;
-
-        if (format === 'pdf') {
-            exportPDF(fileName);
-        } else if (format === 'word') {
-            exportWord(fileName);
-        } else if (format === 'xml') {
-            exportXML(fileName);
-        } else if (format === 'html') {
-            exportHTMLReport(fileName);
+        if (!inputName) {
+            alert('කරුණාකර File එකට නමක් (File Name) ඇතුළත් කරන්න!');
+            return;
         }
 
-        closeDownloadModal();
-        showToast('📥 File Download Started!');
+        const confirmBtn = document.getElementById('confirm-download-btn');
+        const spinner = document.getElementById('download-spinner');
+        const btnText = document.getElementById('download-btn-text');
+
+        // Start Loading Effect
+        confirmBtn.disabled = true;
+        spinner.classList.remove('hidden');
+        btnText.innerText = 'Preparing File...';
+
+        try {
+            if (format === 'pdf') {
+                await exportPDFWithLocation(inputName);
+            } else if (format === 'word') {
+                await exportDataWithLocation(getWordContent(), 'application/msword', `${inputName}.doc`);
+            } else if (format === 'xml') {
+                await exportDataWithLocation(getXMLContent(), 'text/xml', `${inputName}.xml`);
+            } else if (format === 'html') {
+                await exportDataWithLocation(getHTMLContent(inputName), 'text/html', `${inputName}.html`);
+            }
+
+            closeDownloadModal();
+            showToast('📥 File Saved Successfully!');
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                alert('Download එක අතරමැදදී අසාර්ථක විය: ' + err.message);
+            }
+        } finally {
+            // Stop Loading Effect
+            confirmBtn.disabled = false;
+            spinner.classList.add('hidden');
+            btnText.innerText = 'Download Now';
+        }
     }
 
-    function exportPDF(fileName) {
+    async function exportDataWithLocation(content, mimeType, fullFileName) {
+        const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
+
+        // Save File System Access API
+        if ('showSaveFilePicker' in window) {
+            const handle = await window.showSaveFilePicker({
+                suggestedName: fullFileName,
+                types: [{
+                    description: 'Document File',
+                    accept: { [mimeType]: ['.' + fullFileName.split('.').pop()] }
+                }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+        } else {
+            // Fallback for unsupported browsers
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fullFileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        }
+    }
+
+    async function exportPDFWithLocation(fileName) {
         const tempContainer = document.createElement('div');
         tempContainer.style.padding = '20px';
         tempContainer.style.fontFamily = 'Arial, sans-serif';
@@ -340,21 +387,40 @@
         `;
 
         if (window.html2pdf) {
-            const opt = {
-                margin:       10,
-                filename:     `${fileName}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(tempContainer).save();
+            const pdfBlob = await html2pdf().set({
+                margin: 10,
+                filename: `${fileName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(tempContainer).output('blob');
+
+            if ('showSaveFilePicker' in window) {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: `${fileName}.pdf`,
+                    types: [{
+                        description: 'PDF Document',
+                        accept: { 'application/pdf': ['.pdf'] }
+                    }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(pdfBlob);
+                await writable.close();
+            } else {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(pdfBlob);
+                link.download = `${fileName}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            }
         } else {
-            // Fallback to HTML if html2pdf CDN fails
-            exportHTMLReport(fileName);
+            await exportDataWithLocation(getHTMLContent(fileName), 'text/html', `${fileName}.html`);
         }
     }
 
-    function exportXML(fileName) {
+    function getXMLContent() {
         let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<VasanaCalculatorRecords>\n`;
         savedRecords.forEach(r => {
             xml += `  <Record>\n`;
@@ -366,11 +432,10 @@
             xml += `  </Record>\n`;
         });
         xml += `</VasanaCalculatorRecords>`;
-
-        downloadBlob(xml, 'text/xml;charset=utf-8;', `${fileName}.xml`);
+        return xml;
     }
 
-    function exportWord(fileName) {
+    function getWordContent() {
         let htmlContent = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
@@ -415,11 +480,10 @@
         </body>
         </html>
         `;
-
-        downloadBlob(htmlContent, 'application/msword;charset=utf-8;', `${fileName}.doc`);
+        return htmlContent;
     }
 
-    function exportHTMLReport(fileName) {
+    function getHTMLContent(fileName) {
         let tableRows = '';
         savedRecords.forEach(r => {
             tableRows += `
@@ -432,7 +496,7 @@
             `;
         });
 
-        const htmlDocument = `
+        return `
             <!DOCTYPE html>
             <html lang="si">
             <head>
@@ -465,19 +529,6 @@
             </body>
             </html>
         `;
-
-        downloadBlob(htmlDocument, 'text/html;charset=utf-8;', `${fileName}.html`);
-    }
-
-    function downloadBlob(content, type, fullFileName) {
-        const blob = new Blob([content], { type: type });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fullFileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
     }
 
     function showToast(msg) {
