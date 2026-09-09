@@ -1,172 +1,567 @@
-let expression = '';
-let historyItems = [
-    { id: '1', name: 'සුපර්මාර්කට් බඩු ලැයිස්තුව', amount: 12450.50, date: '2026-09-08' },
-    { id: '2', name: 'පෙට්‍රල් - Bajaj CT 100', amount: 2500.00, date: '2026-09-07' }
-];
+(function () {
+    'use strict';
 
-const exprDisplay = document.getElementById('calcExpression');
-const resDisplay = document.getElementById('calcResult');
-const historyContainer = document.getElementById('historyContainer');
+    let display, calcNote, toast, savedModal, editModal, downloadModal, savedList;
+    let savedRecords = [];
+    let editingRecordId = null;
 
-// Calculator Logic
-function appendNum(num) {
-    expression += num;
-    updateCalcDisplay();
-}
+    const STORAGE_KEY = 'vasana_app_records_v2';
 
-function appendOp(op) {
-    if (!expression && op !== '-') return;
-    const last = expression.slice(-1);
-    if (['+', '-', '*', '/', '%'].includes(last)) {
-        expression = expression.slice(0, -1) + op;
-    } else {
-        expression += op;
-    }
-    updateCalcDisplay();
-}
+    document.addEventListener('DOMContentLoaded', initApp);
 
-function clearCalc() {
-    expression = '';
-    resDisplay.textContent = '0.00';
-    updateCalcDisplay();
-}
+    function initApp() {
+        display = document.getElementById('display');
+        calcNote = document.getElementById('calc-note');
+        toast = document.getElementById('toast-message');
+        savedModal = document.getElementById('saved-modal');
+        editModal = document.getElementById('edit-modal');
+        downloadModal = document.getElementById('download-modal');
+        savedList = document.getElementById('saved-list');
 
-function deleteDigit() {
-    expression = expression.slice(0, -1);
-    updateCalcDisplay();
-}
+        try {
+            savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        } catch (e) {
+            savedRecords = [];
+        }
 
-function updateCalcDisplay() {
-    exprDisplay.textContent = expression || '0';
-}
-
-function calculate() {
-    try {
-        if (!expression) return;
-        const val = eval(expression.replace(/×/g, '*').replace(/÷/g, '/'));
-        resDisplay.textContent = Number(val).toLocaleString('en-US', { minimumFractionDigits: 2 });
-    } catch (e) {
-        resDisplay.textContent = 'Error';
-    }
-}
-
-function saveCalculation() {
-    const input = document.getElementById('noteInput');
-    const note = input.value.trim() || 'ගණනය කිරීම';
-    const amountVal = parseFloat(resDisplay.textContent.replace(/,/g, ''));
-
-    if (isNaN(amountVal) || amountVal === 0) {
-        alert('කරුණාකර ප්‍රථමයෙන් අගයක් ගණනය කරන්න.');
-        return;
+        updateClock();
+        setInterval(updateClock, 1000);
+        bindEvents();
     }
 
-    const item = {
-        id: Date.now().toString(),
-        name: note,
-        amount: amountVal,
-        date: new Date().toISOString().split('T')[0]
-    };
-
-    historyItems.unshift(item);
-    input.value = '';
-    renderHistory();
-}
-
-// History Render (Fixing Item Name and Amount Display + Swipe Actions)
-function renderHistory() {
-    historyContainer.innerHTML = '';
-    document.getElementById('historyCount').textContent = `${historyItems.length} Items`;
-
-    if (historyItems.length === 0) {
-        historyContainer.innerHTML = '<div style="text-align:center; color:#7d7890; padding:20px;">Saved items කිසිවක් නැත.</div>';
-        return;
+    function updateClock() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        const d = document.getElementById('current-date');
+        const t = document.getElementById('current-time');
+        if (d && t) {
+            d.innerText = `${year}-${month}-${day}`;
+            t.innerText = now.toLocaleTimeString();
+        }
     }
 
-    historyItems.forEach(item => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'card-wrapper';
+    function getCurrentDateFormatted() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
-        wrapper.innerHTML = `
-            <div class="swipe-indicator swipe-edit">✏️ Edit</div>
-            <div class="swipe-indicator swipe-delete">🗑️ Delete</div>
-            <div class="saved-card" id="card-${item.id}">
-                <div class="card-left">
-                    <div class="saved-card-title">${item.name}</div>
-                    <div class="saved-card-date">${item.date}</div>
+    function bindEvents() {
+        const buttonsContainer = document.querySelector('.buttons');
+        if (buttonsContainer) {
+            buttonsContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const val = btn.getAttribute('data-val');
+                const action = btn.getAttribute('data-action');
+
+                if (val !== null) {
+                    appendCharacter(val);
+                } else if (action === 'clear') {
+                    display.value = '';
+                } else if (action === 'delete') {
+                    deleteLastChar();
+                } else if (action === 'calculate') {
+                    calculateResult();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag === 'input' || activeTag === 'select') return;
+
+            if ((e.key >= '0' && e.key <= '9') || ['+', '-', '*', '/', '.'].includes(e.key)) {
+                appendCharacter(e.key);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                calculateResult();
+            } else if (e.key === 'Backspace') {
+                deleteLastChar();
+            } else if (e.key === 'Escape') {
+                display.value = '';
+            }
+        });
+
+        document.getElementById('save-btn').addEventListener('click', () => {
+            const result = display.value.trim();
+            const note = calcNote.value.trim() || 'General Calculation';
+
+            if (!result || result === 'Error') {
+                alert('කරුණාකර පළමුව නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!');
+                return;
+            }
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+
+            const record = {
+                id: Date.now(),
+                date: `${year}-${month}-${day}`,
+                time: now.toLocaleTimeString(),
+                note: note,
+                expression: result
+            };
+
+            savedRecords.push(record);
+            saveToStorage();
+
+            showToast('🎉 Data Saved Successfully!');
+            calcNote.value = '';
+        });
+
+        document.getElementById('view-btn').addEventListener('click', () => {
+            renderHistory();
+            savedModal.classList.remove('hidden');
+        });
+
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            savedModal.classList.add('hidden');
+        });
+
+        document.getElementById('clear-all-btn').addEventListener('click', () => {
+            if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
+                savedRecords = [];
+                saveToStorage();
+                renderHistory();
+            }
+        });
+
+        savedList.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-btn');
+            const deleteBtn = e.target.closest('.delete-btn');
+            const infoArea = e.target.closest('.saved-item-info');
+
+            if (deleteBtn) {
+                const id = Number(deleteBtn.getAttribute('data-id'));
+                if (confirm('මෙම දත්තය ඉවත් කිරීමට ඔබට විශ්වාසද?')) {
+                    savedRecords = savedRecords.filter(item => item.id !== id);
+                    saveToStorage();
+                    renderHistory();
+                }
+            } else if (editBtn) {
+                const id = Number(editBtn.getAttribute('data-id'));
+                const record = savedRecords.find(item => item.id === id);
+                if (!record) return;
+
+                editingRecordId = id;
+                document.getElementById('edit-note').value = record.note;
+                document.getElementById('edit-expression').value = record.expression;
+                editModal.classList.remove('hidden');
+            } else if (infoArea) {
+                const expr = infoArea.getAttribute('data-expr');
+                if (expr) {
+                    display.value = expr;
+                    savedModal.classList.add('hidden');
+                }
+            }
+        });
+
+        document.getElementById('close-edit-btn').addEventListener('click', closeEdit);
+        document.getElementById('cancel-edit-btn').addEventListener('click', closeEdit);
+
+        document.getElementById('save-edit-btn').addEventListener('click', () => {
+            if (!editingRecordId) return;
+
+            const newNote = document.getElementById('edit-note').value.trim();
+            const newExpr = document.getElementById('edit-expression').value.trim();
+
+            if (!newExpr) {
+                alert('අගය හිස්ව තැබිය නොහැක!');
+                return;
+            }
+
+            savedRecords = savedRecords.map(item => item.id === editingRecordId ? {
+                ...item,
+                note: newNote || 'General Calculation',
+                expression: newExpr
+            } : item);
+
+            saveToStorage();
+            closeEdit();
+            renderHistory();
+        });
+
+        const downloadBtn = document.getElementById('download-btn');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (savedRecords.length === 0) {
+                    alert('Export / Share කිරීමට Save කරන ලද දත්ත කිසිවක් නොමැත!');
+                    return;
+                }
+                document.getElementById('export-filename').value = '';
+                downloadModal.classList.remove('hidden');
+            });
+        }
+
+        document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
+        document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
+
+        // Download Event
+        document.getElementById('confirm-download-btn').addEventListener('click', () => handleExport(false));
+
+        // Share Event
+        document.getElementById('confirm-share-btn').addEventListener('click', () => handleExport(true));
+    }
+
+    function appendCharacter(char) {
+        if (display.value === 'Error') display.value = '';
+        display.value += char;
+    }
+
+    function deleteLastChar() {
+        if (display.value === 'Error') {
+            display.value = '';
+        } else {
+            display.value = display.value.slice(0, -1);
+        }
+    }
+
+    function calculateResult() {
+        if (!display.value.trim()) return;
+        try {
+            const expr = display.value.replace(/×/g, '*').replace(/÷/g, '/');
+            if (!/^[0-9+\-*/. ]+$/.test(expr)) {
+                display.value = 'Error';
+                return;
+            }
+            const res = Function(`'use strict'; return (${expr})`)();
+            display.value = isFinite(res) ? Math.round(res * 1e10) / 1e10 : 'Error';
+        } catch {
+            display.value = 'Error';
+        }
+    }
+
+    function renderHistory() {
+        savedList.innerHTML = '';
+        if (savedRecords.length === 0) {
+            savedList.innerHTML = '<p style="color:#888; text-align:center; margin-top:20px;">තවම කිසිදු දත්තයක් Save කර නොමැත.</p>';
+            return;
+        }
+
+        savedRecords.slice().reverse().forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'saved-item';
+            div.innerHTML = `
+                <div class="saved-item-info" data-expr="${escapeHTML(String(item.expression))}" title="Click to copy to display">
+                    <div class="saved-item-title">${escapeHTML(item.note)}</div>
+                    <div style="color:#aaa; font-size:11px;">${item.date} | ${item.time}</div>
+                    <div class="saved-item-result">${escapeHTML(String(item.expression))}</div>
                 </div>
-                <div class="card-right">
-                    <div class="saved-card-value">LKR ${Number(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                <div>
+                    <button type="button" class="action-btn edit-btn" data-id="${item.id}">✏️ Edit</button>
+                    <button type="button" class="action-btn delete-btn" data-id="${item.id}">🗑️ Cut</button>
                 </div>
+            `;
+            savedList.appendChild(div);
+        });
+    }
+
+    function closeEdit() {
+        editingRecordId = null;
+        editModal.classList.add('hidden');
+    }
+
+    function closeDownloadModal() {
+        downloadModal.classList.add('hidden');
+    }
+
+    function saveToStorage() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
+    }
+
+    // Unified Export & Share Handler
+    async function handleExport(isShare = false) {
+        const inputName = document.getElementById('export-filename').value.trim();
+        const format = document.getElementById('export-format').value;
+
+        if (!inputName) {
+            alert('කරුණාකර File එකට නමක් (File Name) ඇතුළත් කරන්න!');
+            return;
+        }
+
+        const confirmBtn = isShare ? document.getElementById('confirm-share-btn') : document.getElementById('confirm-download-btn');
+        const spinner = isShare ? document.getElementById('share-spinner') : document.getElementById('download-spinner');
+        const btnText = isShare ? document.getElementById('share-btn-text') : document.getElementById('download-btn-text');
+
+        confirmBtn.disabled = true;
+        spinner.classList.remove('hidden');
+        btnText.innerText = isShare ? 'Preparing...' : 'Downloading...';
+
+        try {
+            let blob, extension, mimeType;
+
+            if (format === 'pdf') {
+                extension = 'pdf';
+                mimeType = 'application/pdf';
+                blob = await generatePDFBlob();
+            } else if (format === 'word') {
+                extension = 'doc';
+                mimeType = 'application/msword';
+                blob = new Blob([getWordContent()], { type: `${mimeType};charset=utf-8;` });
+            } else if (format === 'xml') {
+                extension = 'xml';
+                mimeType = 'text/xml';
+                blob = new Blob([getXMLContent()], { type: `${mimeType};charset=utf-8;` });
+            } else if (format === 'html') {
+                extension = 'html';
+                mimeType = 'text/html';
+                blob = new Blob([getHTMLContent(inputName)], { type: `${mimeType};charset=utf-8;` });
+            }
+
+            const fullFileName = `${inputName}.${extension}`;
+
+            if (isShare) {
+                const file = new File([blob], fullFileName, { type: mimeType });
+
+                let fileShareSupported = false;
+                if (navigator.canShare) {
+                    try {
+                        fileShareSupported = navigator.canShare({ files: [file] });
+                    } catch (e) {
+                        fileShareSupported = false;
+                    }
+                }
+
+                if (fileShareSupported && navigator.share) {
+                    await navigator.share({
+                        files: [file],
+                        title: inputName,
+                        text: 'Vasana Calculator Data'
+                    });
+                    showToast('🎉 Shared Successfully!');
+                    closeDownloadModal();
+                } else if (navigator.share) {
+                    let textSummary = `${getCurrentDateFormatted()} - Data Enter History\n\n`;
+                    savedRecords.forEach(r => {
+                        textSummary += `${r.note}: ${r.expression} (${r.date})\n`;
+                    });
+                    textSummary += `\nApplication Make By :- WAYL Ranaweera`;
+                    
+                    await navigator.share({
+                        title: inputName,
+                        text: textSummary
+                    });
+                    showToast('🎉 Shared Text Summary Successfully!');
+                    closeDownloadModal();
+                } else {
+                    alert('ඔබගේ Browser එක මගින් Share feature එක සහාය නොදක්වයි (HTTPS හරහා භාවිතා කරන්න). Download කිරීම භාවිතා කරන්න.');
+                }
+            } else {
+                const blobUrl = URL.createObjectURL(blob);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = blobUrl;
+                downloadLink.download = fullFileName;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+                
+                showToast('🎉 File Downloaded Successfully!');
+                closeDownloadModal();
+            }
+
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                alert('ක්‍රියාවලිය අසාර්ථක විය: ' + err.message);
+            }
+        } finally {
+            confirmBtn.disabled = false;
+            spinner.classList.add('hidden');
+            btnText.innerText = isShare ? '🔗 Share File' : 'Download';
+        }
+    }
+
+    async function generatePDFBlob() {
+        const currentDate = getCurrentDateFormatted();
+        const tempContainer = document.createElement('div');
+        tempContainer.style.padding = '20px';
+        tempContainer.style.fontFamily = 'Arial, sans-serif';
+
+        let tableRows = '';
+        savedRecords.forEach(r => {
+            tableRows += `
+                <tr>
+                    <td style="border: 1px solid #ccc; padding: 10px;">${escapeHTML(r.note)}</td>
+                    <td style="border: 1px solid #ccc; padding: 10px;"><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td style="border: 1px solid #ccc; padding: 10px;">${r.date}</td>
+                    <td style="border: 1px solid #ccc; padding: 10px;">${r.time}</td>
+                </tr>
+            `;
+        });
+
+        tempContainer.innerHTML = `
+            <h2 style="text-align: center; color: #cc7000;">${currentDate} - Data Enter History</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #f4f4f4;">
+                        <th style="border: 1px solid #ccc; padding: 10px;">විස්තරය / නම</th>
+                        <th style="border: 1px solid #ccc; padding: 10px;">ගණන / අගය</th>
+                        <th style="border: 1px solid #ccc; padding: 10px;">දිනය</th>
+                        <th style="border: 1px solid #ccc; padding: 10px;">වෙලාව</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+            <div style="margin-top: 30px; text-align: right; font-size: 11px; color: #666; font-style: italic;">
+                Application Make By :- WAYL Ranaweera
             </div>
         `;
 
-        historyContainer.appendChild(wrapper);
-        bindSwipeEvents(wrapper.querySelector('.saved-card'), item);
-    });
-}
-
-// Swipe Controls Logic (Right -> Edit | Left -> Delete)
-function bindSwipeEvents(cardElement, item) {
-    let startX = 0;
-    let currentX = 0;
-
-    cardElement.addEventListener('touchstart', (e) => {
-        startX = e.touches[0].clientX;
-    }, { passive: true });
-
-    cardElement.addEventListener('touchmove', (e) => {
-        currentX = e.touches[0].clientX;
-        let diffX = currentX - startX;
-
-        if (Math.abs(diffX) < 120) {
-            cardElement.style.transform = `translateX(${diffX}px)`;
+        if (window.html2pdf) {
+            return await html2pdf().set({
+                margin: 10,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(tempContainer).output('blob');
+        } else {
+            throw new Error('PDF generator library loading failed');
         }
-    }, { passive: true });
+    }
 
-    cardElement.addEventListener('touchend', () => {
-        let diffX = currentX - startX;
-        cardElement.style.transform = 'translateX(0px)';
+    function getXMLContent() {
+        const currentDate = getCurrentDateFormatted();
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xml += `<DataEnterHistory title="${currentDate} - Data Enter History" createdBy="WAYL Ranaweera">\n`;
+        savedRecords.forEach(r => {
+            xml += `  <Record>\n`;
+            xml += `    <ID>${r.id}</ID>\n`;
+            xml += `    <Description>${escapeHTML(r.note)}</Description>\n`;
+            xml += `    <Value>${escapeHTML(String(r.expression))}</Value>\n`;
+            xml += `    <Date>${r.date}</Date>\n`;
+            xml += `    <Time>${r.time}</Time>\n`;
+            xml += `  </Record>\n`;
+        });
+        xml += `  <Footer>Application Make By :- WAYL Ranaweera</Footer>\n`;
+        xml += `</DataEnterHistory>`;
+        return xml;
+    }
 
-        // Swipe Right -> Edit
-        if (diffX > 75) {
-            openEditModal(item);
-        } 
-        // Swipe Left -> Delete
-        else if (diffX < -75) {
-            if (confirm(`"${item.name}" මකා දැමීමට ඔබට විශ්වාසද?`)) {
-                historyItems = historyItems.filter(i => i.id !== item.id);
-                renderHistory();
-            }
-        }
+    function getWordContent() {
+        const currentDate = getCurrentDateFormatted();
+        let htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                h2 { color: #d47a00; text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                th { background-color: #ff8c00; color: white; }
+                tr:nth-child(even) { background-color: #f2f2f2; }
+                .footer-text { margin-top: 30px; text-align: right; font-size: 11px; color: #666; font-style: italic; }
+            </style>
+        </head>
+        <body>
+            <h2>${currentDate} - Data Enter History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>විස්තරය / නම (Name/Note)</th>
+                        <th>ගණන / අගය (Value)</th>
+                        <th>දිනය (Date)</th>
+                        <th>වෙලාව (Time)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
 
-        startX = 0;
-        currentX = 0;
-    });
-}
+        savedRecords.forEach(r => {
+            htmlContent += `
+                <tr>
+                    <td>${escapeHTML(r.note)}</td>
+                    <td><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td>${r.date}</td>
+                    <td>${r.time}</td>
+                </tr>
+            `;
+        });
 
-// Edit Modal Handling
-function openEditModal(item) {
-    document.getElementById('editId').value = item.id;
-    document.getElementById('editName').value = item.name;
-    document.getElementById('editAmount').value = item.amount;
-    document.getElementById('editModal').classList.remove('hidden');
-}
+        htmlContent += `
+                </tbody>
+            </table>
+            <div class="footer-text">
+                Application Make By :- WAYL Ranaweera
+            </div>
+        </body>
+        </html>
+        `;
+        return htmlContent;
+    }
 
-function closeEditModal() {
-    document.getElementById('editModal').classList.add('hidden');
-}
+    function getHTMLContent(fileName) {
+        const currentDate = getCurrentDateFormatted();
+        let tableRows = '';
+        savedRecords.forEach(r => {
+            tableRows += `
+                <tr>
+                    <td>${escapeHTML(r.note)}</td>
+                    <td><b>${escapeHTML(String(r.expression))}</b></td>
+                    <td>${r.date}</td>
+                    <td>${r.time}</td>
+                </tr>
+            `;
+        });
 
-function saveEdit() {
-    const id = document.getElementById('editId').value;
-    const name = document.getElementById('editName').value.trim();
-    const amount = parseFloat(document.getElementById('editAmount').value);
+        return `
+            <!DOCTYPE html>
+            <html lang="si">
+            <head>
+                <meta charset="UTF-8">
+                <title>${escapeHTML(fileName)}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+                    h2 { text-align: center; color: #cc7000; border-bottom: 2px solid #cc7000; padding-bottom: 10px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #ccc; padding: 10px 14px; text-align: left; font-size: 14px; }
+                    th { background-color: #f4f4f4; }
+                    tr:nth-child(even) { background-color: #fafafa; }
+                    .footer-text { margin-top: 30px; text-align: right; font-size: 12px; color: #666; font-style: italic; }
+                </style>
+            </head>
+            <body>
+                <h2>${currentDate} - Data Enter History</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>විස්තරය / නම (Name/Note)</th>
+                            <th>ගණන / අගය (Value)</th>
+                            <th>දිනය (Date)</th>
+                            <th>වෙලාව (Time)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+                <div class="footer-text">
+                    Application Make By :- WAYL Ranaweera
+                </div>
+            </body>
+            </html>
+        `;
+    }
 
-    if (!name || isNaN(amount)) return;
+    function showToast(msg) {
+        toast.innerText = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
 
-    historyItems = historyItems.map(i => i.id === id ? { ...i, name, amount } : i);
-    closeEditModal();
-    renderHistory();
-}
-
-// Run Initial Render
-renderHistory();
+    function escapeHTML(str) {
+        return String(str).replace(/[&<>'"]/g, 
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+})();
