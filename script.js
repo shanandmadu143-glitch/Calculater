@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    let display, calcNote, toast, savedModal, editModal, downloadModal, savedList;
+    let display, calcNote, toast, savedModal, editModal, downloadModal, savedList, datalist;
     let savedRecords = [];
     let editingRecordId = null;
 
@@ -17,6 +17,7 @@
         editModal = document.getElementById('edit-modal');
         downloadModal = document.getElementById('download-modal');
         savedList = document.getElementById('saved-list');
+        datalist = document.getElementById('saved-notes-list');
 
         try {
             savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -26,6 +27,7 @@
 
         updateClock();
         setInterval(updateClock, 1000);
+        updateDatalist();
         bindEvents();
     }
 
@@ -49,6 +51,21 @@
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    // කලින් භාවිත කළ විස්තර (Notes) Dropdown එකට එකතු කිරීම
+    function updateDatalist() {
+        if (!datalist) return;
+        datalist.innerHTML = '';
+        
+        const uniqueNotes = [...new Set(savedRecords.map(item => item.note))];
+        uniqueNotes.forEach(note => {
+            if (note) {
+                const option = document.createElement('option');
+                option.value = note;
+                datalist.appendChild(option);
+            }
+        });
     }
 
     function bindEvents() {
@@ -89,11 +106,12 @@
             }
         });
 
+        // Save Button Click Event (Auto-Summing Feature Added)
         document.getElementById('save-btn').addEventListener('click', () => {
-            const result = display.value.trim();
+            const resultValStr = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
 
-            if (!result || result === 'Error') {
+            if (!resultValStr || resultValStr === 'Error') {
                 alert('කරුණාකර පළමුව නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!');
                 return;
             }
@@ -102,19 +120,44 @@
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
+            const formattedDate = `${year}-${month}-${day}`;
+            const formattedTime = now.toLocaleTimeString();
 
-            const record = {
-                id: Date.now(),
-                date: `${year}-${month}-${day}`,
-                time: now.toLocaleTimeString(),
-                note: note,
-                expression: result
-            };
+            // එකම නම තිබේදැයි පරීක්ෂා කිරීම
+            const existingIndex = savedRecords.findIndex(
+                item => item.note.toLowerCase() === note.toLowerCase()
+            );
 
-            savedRecords.push(record);
+            if (existingIndex !== -1) {
+                // එකම නම තිබේ නම්: පැරණි අගයට අලුත් අගය එකතු (Sum) කර Update කිරීම
+                const existingRecord = savedRecords[existingIndex];
+                const oldVal = parseFloat(existingRecord.expression) || 0;
+                const newVal = parseFloat(resultValStr) || 0;
+                const totalVal = Math.round((oldVal + newVal) * 1e10) / 1e10;
+
+                savedRecords[existingIndex] = {
+                    ...existingRecord,
+                    expression: String(totalVal),
+                    date: formattedDate,
+                    time: formattedTime
+                };
+
+                showToast(`➕ '${note}' සඳහා අගය එකතු විය! (මුළු අගය: ${totalVal})`);
+            } else {
+                // අලුත් නමක් නම්: නව Record එකක් ලෙස Save කිරීම
+                const record = {
+                    id: Date.now(),
+                    date: formattedDate,
+                    time: formattedTime,
+                    note: note,
+                    expression: resultValStr
+                };
+                savedRecords.push(record);
+                showToast('🎉 Data Saved Successfully!');
+            }
+
             saveToStorage();
-
-            showToast('🎉 Data Saved Successfully!');
+            updateDatalist();
             calcNote.value = '';
         });
 
@@ -131,6 +174,7 @@
             if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
                 savedRecords = [];
                 saveToStorage();
+                updateDatalist();
                 renderHistory();
             }
         });
@@ -156,6 +200,7 @@
             } : item);
 
             saveToStorage();
+            updateDatalist();
             closeEdit();
             renderHistory();
         });
@@ -208,6 +253,7 @@
         }
     }
 
+    // Saved History Render Function with Swipe Elements
     function renderHistory() {
         savedList.innerHTML = '';
         if (savedRecords.length === 0) {
@@ -236,6 +282,7 @@
         });
     }
 
+    // Touch & Drag Swipe Gesture Handler
     function setupSwipeGesture(element, item) {
         let startX = 0;
         let currentX = 0;
@@ -264,17 +311,20 @@
             element.style.transition = 'transform 0.25s ease';
 
             if (currentX > 75) {
+                // Swipe Right -> EDIT
                 element.style.transform = 'translateX(0)';
                 editingRecordId = item.id;
                 document.getElementById('edit-note').value = item.note;
                 document.getElementById('edit-expression').value = item.expression;
                 editModal.classList.remove('hidden');
             } else if (currentX < -75) {
+                // Swipe Left -> DELETE
                 element.style.transform = 'translateX(-100%)';
                 setTimeout(() => {
                     if (confirm('මෙම දත්තය ඉවත් කිරීමට ඔබට විශ්වාසද?')) {
                         savedRecords = savedRecords.filter(r => r.id !== item.id);
                         saveToStorage();
+                        updateDatalist();
                         renderHistory();
                     } else {
                         element.style.transform = 'translateX(0)';
@@ -282,6 +332,7 @@
                 }, 100);
             } else {
                 element.style.transform = 'translateX(0)';
+                // Single Click -> Load Value to Calculator Display
                 if (Math.abs(currentX) < 5) {
                     display.value = item.expression;
                     savedModal.classList.add('hidden');
