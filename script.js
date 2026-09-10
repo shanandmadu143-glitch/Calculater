@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    let display, calcNote, toast, savedModal, editModal, downloadModal, savedList, datalist;
+    let display, calcNote, toast, savedModal, editModal, downloadModal, savedList, suggestionsBox;
     let savedRecords = [];
     let editingRecordId = null;
 
@@ -17,19 +17,18 @@
         editModal = document.getElementById('edit-modal');
         downloadModal = document.getElementById('download-modal');
         savedList = document.getElementById('saved-list');
-        datalist = document.getElementById('saved-notes-list');
+        suggestionsBox = document.getElementById('custom-suggestions');
 
         try {
             savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            if (!Array.isArray(savedRecords)) savedRecords = [];
         } catch (e) {
             savedRecords = [];
         }
 
         updateClock();
         setInterval(updateClock, 1000);
-        updateDatalist();
         bindEvents();
+        setupSearchableSuggestions();
     }
 
     function updateClock() {
@@ -37,7 +36,7 @@
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
-
+        
         const d = document.getElementById('current-date');
         const t = document.getElementById('current-time');
         if (d && t) {
@@ -54,24 +53,54 @@
         return `${year}-${month}-${day}`;
     }
 
-    function updateDatalist() {
-        if (!datalist) return;
-        datalist.innerHTML = '';
+    // Auto-Searchable Suggestions List Generator
+    function setupSearchableSuggestions() {
+        if (!calcNote || !suggestionsBox) return;
 
-        const uniqueMap = new Map();
-        savedRecords.forEach(item => {
-            if (item && item.note) {
-                const key = item.note.trim().toLowerCase();
-                if (!uniqueMap.has(key)) {
-                    uniqueMap.set(key, item.note.trim());
-                }
+        function showSuggestions(filterText = '') {
+            const uniqueNotes = [...new Set(savedRecords.map(item => item.note))];
+            const filtered = uniqueNotes.filter(note => 
+                note && note.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            suggestionsBox.innerHTML = '';
+
+            if (filtered.length === 0) {
+                suggestionsBox.classList.add('hidden');
+                return;
             }
+
+            filtered.forEach(note => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'suggestion-item';
+                itemDiv.innerText = note;
+
+                itemDiv.addEventListener('click', () => {
+                    calcNote.value = note;
+                    suggestionsBox.classList.add('hidden');
+                });
+
+                suggestionsBox.appendChild(itemDiv);
+            });
+
+            suggestionsBox.classList.remove('hidden');
+        }
+
+        // Click කළ විට suggestions පෙන්වීම
+        calcNote.addEventListener('focus', () => {
+            showSuggestions(calcNote.value.trim());
         });
 
-        uniqueMap.forEach(originalNote => {
-            const option = document.createElement('option');
-            option.value = originalNote;
-            datalist.appendChild(option);
+        // Type කරද්දී real-time filter වීම
+        calcNote.addEventListener('input', () => {
+            showSuggestions(calcNote.value.trim());
+        });
+
+        // පිටත Click කළ විට suggestions සැඟවීම
+        document.addEventListener('click', (e) => {
+            if (!calcNote.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.add('hidden');
+            }
         });
     }
 
@@ -113,6 +142,7 @@
             }
         });
 
+        // Save Button (💾 Icon Only) Click Event
         document.getElementById('save-btn').addEventListener('click', () => {
             const resultValStr = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
@@ -122,20 +152,18 @@
                 return;
             }
 
-            const now = new Date();
             const formattedDate = getCurrentDateFormatted();
-            const formattedTime = now.toLocaleTimeString();
+            const formattedTime = new Date().toLocaleTimeString();
 
             const existingIndex = savedRecords.findIndex(
-                item => item.note.trim().toLowerCase() === note.toLowerCase()
+                item => item.note.toLowerCase() === note.toLowerCase()
             );
 
             if (existingIndex !== -1) {
+                // එකම නම තිබේ නම්: පැරණි අගයට අලුත් අගය එකතු වී Update වීම
                 const existingRecord = savedRecords[existingIndex];
-                const oldVal = Number(existingRecord.expression) || 0;
-                const newVal = Number(resultValStr) || 0;
-                
-                // Floating point precision handling
+                const oldVal = parseFloat(existingRecord.expression) || 0;
+                const newVal = parseFloat(resultValStr) || 0;
                 const totalVal = Math.round((oldVal + newVal) * 1e10) / 1e10;
 
                 savedRecords[existingIndex] = {
@@ -145,8 +173,9 @@
                     time: formattedTime
                 };
 
-                showToast(`➕ '${note}' සඳහා අගය එකතු විය! (මුළු: ${totalVal})`);
+                showToast(`➕ '${note}' සඳහා අගය එකතු විය! (${totalVal})`);
             } else {
+                // නව නමක් නම්: අලුතින් Record එකක් Save වීම
                 const record = {
                     id: Date.now(),
                     date: formattedDate,
@@ -159,8 +188,8 @@
             }
 
             saveToStorage();
-            updateDatalist();
             calcNote.value = '';
+            if (suggestionsBox) suggestionsBox.classList.add('hidden');
         });
 
         document.getElementById('view-btn').addEventListener('click', () => {
@@ -176,7 +205,6 @@
             if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
                 savedRecords = [];
                 saveToStorage();
-                updateDatalist();
                 renderHistory();
             }
         });
@@ -202,7 +230,6 @@
             } : item);
 
             saveToStorage();
-            updateDatalist();
             closeEdit();
             renderHistory();
         });
@@ -244,13 +271,12 @@
         if (!display.value.trim()) return;
         try {
             const expr = display.value.replace(/×/g, '*').replace(/÷/g, '/');
-            // Safe Token Sanitization
             if (!/^[0-9+\-*/. ]+$/.test(expr)) {
                 display.value = 'Error';
                 return;
             }
             const res = Function(`'use strict'; return (${expr})`)();
-            display.value = (isFinite(res) && !isNaN(res)) ? Math.round(res * 1e10) / 1e10 : 'Error';
+            display.value = isFinite(res) ? Math.round(res * 1e10) / 1e10 : 'Error';
         } catch {
             display.value = 'Error';
         }
@@ -270,7 +296,7 @@
             wrapper.innerHTML = `
                 <div class="swipe-background swipe-bg-left">✏️ Edit</div>
                 <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
-                <div class="saved-item" data-id="${item.id}">
+                <div class="saved-item" data-id="${item.id}" data-expr="${escapeHTML(String(item.expression))}">
                     <div class="saved-item-title">${escapeHTML(item.note)}</div>
                     <div style="color:#aaa; font-size:11px;">${item.date} | ${item.time}</div>
                     <div class="saved-item-result">${escapeHTML(String(item.expression))}</div>
@@ -289,13 +315,13 @@
         let currentX = 0;
         let isSwiping = false;
 
-        const onStart = (e) => {
+        const onTouchStart = (e) => {
             startX = e.touches ? e.touches[0].clientX : e.clientX;
             isSwiping = true;
             element.style.transition = 'none';
         };
 
-        const onMove = (e) => {
+        const onTouchMove = (e) => {
             if (!isSwiping) return;
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             currentX = x - startX;
@@ -306,7 +332,7 @@
             element.style.transform = `translateX(${currentX}px)`;
         };
 
-        const onEnd = () => {
+        const onTouchEnd = () => {
             if (!isSwiping) return;
             isSwiping = false;
             element.style.transition = 'transform 0.25s ease';
@@ -323,7 +349,6 @@
                     if (confirm('මෙම දත්තය ඉවත් කිරීමට ඔබට විශ්වාසද?')) {
                         savedRecords = savedRecords.filter(r => r.id !== item.id);
                         saveToStorage();
-                        updateDatalist();
                         renderHistory();
                     } else {
                         element.style.transform = 'translateX(0)';
@@ -339,13 +364,14 @@
             currentX = 0;
         };
 
-        element.addEventListener('touchstart', onStart, { passive: true });
-        element.addEventListener('touchmove', onMove, { passive: true });
-        element.addEventListener('touchend', onEnd);
+        element.addEventListener('touchstart', onTouchStart, { passive: true });
+        element.addEventListener('touchmove', onTouchMove, { passive: true });
+        element.addEventListener('touchend', onTouchEnd);
 
-        element.addEventListener('mousedown', onStart);
-        window.addEventListener('mousemove', (e) => { if (isSwiping) onMove(e); });
-        window.addEventListener('mouseup', () => { if (isSwiping) onEnd(); });
+        element.addEventListener('mousedown', onTouchStart);
+        element.addEventListener('mousemove', (e) => { if (isSwiping) onTouchMove(e); });
+        element.addEventListener('mouseup', onTouchEnd);
+        element.addEventListener('mouseleave', () => { if (isSwiping) onTouchEnd(); });
     }
 
     function closeEdit() {
@@ -408,7 +434,7 @@
                 if (navigator.canShare) {
                     try {
                         fileShareSupported = navigator.canShare({ files: [file] });
-                    } catch {
+                    } catch (e) {
                         fileShareSupported = false;
                     }
                 }
@@ -427,7 +453,7 @@
                         textSummary += `${r.note}: ${r.expression} (${r.date})\n`;
                     });
                     textSummary += `\nApplication Make By :- WAYL Ranaweera`;
-
+                    
                     await navigator.share({
                         title: inputName,
                         text: textSummary
@@ -447,7 +473,7 @@
                 document.body.removeChild(downloadLink);
 
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
-
+                
                 showToast('🎉 File Downloaded Successfully!');
                 closeDownloadModal();
             }
