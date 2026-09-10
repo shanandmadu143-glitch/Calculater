@@ -135,36 +135,6 @@
             }
         });
 
-        savedList.addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.edit-btn');
-            const deleteBtn = e.target.closest('.delete-btn');
-            const infoArea = e.target.closest('.saved-item-info');
-
-            if (deleteBtn) {
-                const id = Number(deleteBtn.getAttribute('data-id'));
-                if (confirm('මෙම දත්තය ඉවත් කිරීමට ඔබට විශ්වාසද?')) {
-                    savedRecords = savedRecords.filter(item => item.id !== id);
-                    saveToStorage();
-                    renderHistory();
-                }
-            } else if (editBtn) {
-                const id = Number(editBtn.getAttribute('data-id'));
-                const record = savedRecords.find(item => item.id === id);
-                if (!record) return;
-
-                editingRecordId = id;
-                document.getElementById('edit-note').value = record.note;
-                document.getElementById('edit-expression').value = record.expression;
-                editModal.classList.remove('hidden');
-            } else if (infoArea) {
-                const expr = infoArea.getAttribute('data-expr');
-                if (expr) {
-                    display.value = expr;
-                    savedModal.classList.add('hidden');
-                }
-            }
-        });
-
         document.getElementById('close-edit-btn').addEventListener('click', closeEdit);
         document.getElementById('cancel-edit-btn').addEventListener('click', closeEdit);
 
@@ -206,10 +176,7 @@
         document.getElementById('close-download-btn').addEventListener('click', closeDownloadModal);
         document.getElementById('cancel-download-btn').addEventListener('click', closeDownloadModal);
 
-        // Download Event
         document.getElementById('confirm-download-btn').addEventListener('click', () => handleExport(false));
-
-        // Share Event
         document.getElementById('confirm-share-btn').addEventListener('click', () => handleExport(true));
     }
 
@@ -249,21 +216,88 @@
         }
 
         savedRecords.slice().reverse().forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'saved-item';
-            div.innerHTML = `
-                <div class="saved-item-info" data-expr="${escapeHTML(String(item.expression))}" title="Click to copy to display">
+            const wrapper = document.createElement('div');
+            wrapper.className = 'saved-item-wrapper';
+
+            wrapper.innerHTML = `
+                <div class="swipe-background swipe-bg-left">✏️ Edit</div>
+                <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
+                <div class="saved-item" data-id="${item.id}" data-expr="${escapeHTML(String(item.expression))}">
                     <div class="saved-item-title">${escapeHTML(item.note)}</div>
                     <div style="color:#aaa; font-size:11px;">${item.date} | ${item.time}</div>
                     <div class="saved-item-result">${escapeHTML(String(item.expression))}</div>
                 </div>
-                <div>
-                    <button type="button" class="action-btn edit-btn" data-id="${item.id}">✏️ Edit</button>
-                    <button type="button" class="action-btn delete-btn" data-id="${item.id}">🗑️ Cut</button>
-                </div>
             `;
-            savedList.appendChild(div);
+
+            const card = wrapper.querySelector('.saved-item');
+            setupSwipeGesture(card, item);
+
+            savedList.appendChild(wrapper);
         });
+    }
+
+    function setupSwipeGesture(element, item) {
+        let startX = 0;
+        let currentX = 0;
+        let isSwiping = false;
+
+        const onTouchStart = (e) => {
+            startX = e.touches ? e.touches[0].clientX : e.clientX;
+            isSwiping = true;
+            element.style.transition = 'none';
+        };
+
+        const onTouchMove = (e) => {
+            if (!isSwiping) return;
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            currentX = x - startX;
+
+            if (currentX > 120) currentX = 120;
+            if (currentX < -120) currentX = -120;
+
+            element.style.transform = `translateX(${currentX}px)`;
+        };
+
+        const onTouchEnd = () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            element.style.transition = 'transform 0.25s ease';
+
+            if (currentX > 75) {
+                element.style.transform = 'translateX(0)';
+                editingRecordId = item.id;
+                document.getElementById('edit-note').value = item.note;
+                document.getElementById('edit-expression').value = item.expression;
+                editModal.classList.remove('hidden');
+            } else if (currentX < -75) {
+                element.style.transform = 'translateX(-100%)';
+                setTimeout(() => {
+                    if (confirm('මෙම දත්තය ඉවත් කිරීමට ඔබට විශ්වාසද?')) {
+                        savedRecords = savedRecords.filter(r => r.id !== item.id);
+                        saveToStorage();
+                        renderHistory();
+                    } else {
+                        element.style.transform = 'translateX(0)';
+                    }
+                }, 100);
+            } else {
+                element.style.transform = 'translateX(0)';
+                if (Math.abs(currentX) < 5) {
+                    display.value = item.expression;
+                    savedModal.classList.add('hidden');
+                }
+            }
+            currentX = 0;
+        };
+
+        element.addEventListener('touchstart', onTouchStart, { passive: true });
+        element.addEventListener('touchmove', onTouchMove, { passive: true });
+        element.addEventListener('touchend', onTouchEnd);
+
+        element.addEventListener('mousedown', onTouchStart);
+        element.addEventListener('mousemove', (e) => { if (isSwiping) onTouchMove(e); });
+        element.addEventListener('mouseup', onTouchEnd);
+        element.addEventListener('mouseleave', () => { if (isSwiping) onTouchEnd(); });
     }
 
     function closeEdit() {
@@ -279,7 +313,6 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
     }
 
-    // Unified Export & Share Handler
     async function handleExport(isShare = false) {
         const inputName = document.getElementById('export-filename').value.trim();
         const format = document.getElementById('export-format').value;
@@ -354,7 +387,7 @@
                     showToast('🎉 Shared Text Summary Successfully!');
                     closeDownloadModal();
                 } else {
-                    alert('ඔබගේ Browser එක මගින් Share feature එක සහාය නොදක්වයි (HTTPS හරහා භාවිතා කරන්න). Download කිරීම භාවිතා කරන්න.');
+                    alert('ඔබගේ Browser එක මගින් Share feature එක සහාය නොදක්වයි. Download කිරීම භාවිතා කරන්න.');
                 }
             } else {
                 const blobUrl = URL.createObjectURL(blob);
