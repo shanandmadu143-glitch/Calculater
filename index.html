@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vasana Calculator</title>
+    <title>WM Calculator</title>
     <link rel="stylesheet" href="style.css">
     <!-- html2pdf Library for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -14,11 +14,14 @@
         <!-- Header Section -->
         <div class="calc-header">
             <span id="current-date">0000-00-00</span>
+            <span class="app-title">WM Calculator</span>
             <span id="current-time">00:00:00 AM</span>
         </div>
 
         <!-- Display Screen -->
-        <input type="text" id="display" readonly placeholder="0">
+        <div class="display-container">
+            <input type="text" id="display" readonly placeholder="0">
+        </div>
 
         <!-- Searchable Input Field & Save Icon Button -->
         <div class="note-container">
@@ -27,7 +30,9 @@
                 <!-- Custom Searchable Suggestions List -->
                 <div id="custom-suggestions" class="suggestions-dropdown hidden"></div>
             </div>
-            <button id="save-btn" type="button" title="Save Calculation" aria-label="Save">💾</button>
+            <button id="save-btn" type="button" title="Save Calculation" aria-label="Save">
+                <span class="btn-icon">💾</span>
+            </button>
         </div>
 
         <!-- Calculator Keypad Buttons -->
