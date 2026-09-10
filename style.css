@@ -249,21 +249,48 @@ body {
     gap: 10px;
 }
 
+/* --- Swipe Gestures & Items Style --- */
+.saved-item-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: #1a1726;
+}
+
+.swipe-background {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-weight: bold;
+    font-size: 13px;
+    color: #fff;
+    border-radius: 10px;
+}
+
+.swipe-bg-left {
+    background: #ff9f1c;
+    justify-content: flex-start;
+}
+
+.swipe-bg-right {
+    background: #e63946;
+    justify-content: flex-end;
+}
+
 .saved-item {
-    background: rgba(255, 255, 255, 0.04);
-    padding: 10px 12px;
+    position: relative;
+    background: #231f33;
+    padding: 12px 14px;
     border-radius: 10px;
     border-left: 4px solid #2ec4b6;
     color: #ddd;
     font-size: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.saved-item-info {
-    flex: 1;
-    cursor: pointer;
+    z-index: 2;
+    transition: transform 0.1s ease-out;
+    touch-action: pan-y;
 }
 
 .saved-item-title {
@@ -279,20 +306,6 @@ body {
     margin-top: 2px;
     font-family: 'Courier New', Courier, monospace;
 }
-
-.action-btn {
-    border: none;
-    padding: 6px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: bold;
-    color: white;
-    margin-left: 4px;
-}
-
-.edit-btn { background: #ff9f1c; }
-.delete-btn { background: #e63946; }
 
 .clear-history-btn {
     margin-top: 12px;
