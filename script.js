@@ -21,6 +21,7 @@
 
         try {
             savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            if (!Array.isArray(savedRecords)) savedRecords = [];
         } catch (e) {
             savedRecords = [];
         }
@@ -36,7 +37,7 @@
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
-        
+
         const d = document.getElementById('current-date');
         const t = document.getElementById('current-time');
         if (d && t) {
@@ -53,18 +54,24 @@
         return `${year}-${month}-${day}`;
     }
 
-    // කලින් භාවිත කළ විස්තර (Notes) Suggestions ලෙස Dropdown එකට එකතු කිරීම
     function updateDatalist() {
         if (!datalist) return;
         datalist.innerHTML = '';
-        
-        const uniqueNotes = [...new Set(savedRecords.map(item => item.note))];
-        uniqueNotes.forEach(note => {
-            if (note) {
-                const option = document.createElement('option');
-                option.value = note;
-                datalist.appendChild(option);
+
+        const uniqueMap = new Map();
+        savedRecords.forEach(item => {
+            if (item && item.note) {
+                const key = item.note.trim().toLowerCase();
+                if (!uniqueMap.has(key)) {
+                    uniqueMap.set(key, item.note.trim());
+                }
             }
+        });
+
+        uniqueMap.forEach(originalNote => {
+            const option = document.createElement('option');
+            option.value = originalNote;
+            datalist.appendChild(option);
         });
     }
 
@@ -106,7 +113,6 @@
             }
         });
 
-        // Save Button Logic (Auto-summing if note already exists)
         document.getElementById('save-btn').addEventListener('click', () => {
             const resultValStr = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
@@ -117,22 +123,19 @@
             }
 
             const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const formattedDate = `${year}-${month}-${day}`;
+            const formattedDate = getCurrentDateFormatted();
             const formattedTime = now.toLocaleTimeString();
 
-            // එකම නමින් Record එකක් ඇත්දැයි පරීක්ෂා කිරීම
             const existingIndex = savedRecords.findIndex(
-                item => item.note.toLowerCase() === note.toLowerCase()
+                item => item.note.trim().toLowerCase() === note.toLowerCase()
             );
 
             if (existingIndex !== -1) {
-                // තිබේ නම්, පැරණි අගයට අලුත් අගය එකතු (Add) කිරීම
                 const existingRecord = savedRecords[existingIndex];
-                const oldVal = parseFloat(existingRecord.expression) || 0;
-                const newVal = parseFloat(resultValStr) || 0;
+                const oldVal = Number(existingRecord.expression) || 0;
+                const newVal = Number(resultValStr) || 0;
+                
+                // Floating point precision handling
                 const totalVal = Math.round((oldVal + newVal) * 1e10) / 1e10;
 
                 savedRecords[existingIndex] = {
@@ -142,9 +145,8 @@
                     time: formattedTime
                 };
 
-                showToast(`➕ '${note}' සඳහා අගය එකතු විය! (මුළු අගය: ${totalVal})`);
+                showToast(`➕ '${note}' සඳහා අගය එකතු විය! (මුළු: ${totalVal})`);
             } else {
-                // නැතහොත් නව Record එකක් ලෙස Save කිරීම
                 const record = {
                     id: Date.now(),
                     date: formattedDate,
@@ -242,18 +244,18 @@
         if (!display.value.trim()) return;
         try {
             const expr = display.value.replace(/×/g, '*').replace(/÷/g, '/');
+            // Safe Token Sanitization
             if (!/^[0-9+\-*/. ]+$/.test(expr)) {
                 display.value = 'Error';
                 return;
             }
             const res = Function(`'use strict'; return (${expr})`)();
-            display.value = isFinite(res) ? Math.round(res * 1e10) / 1e10 : 'Error';
+            display.value = (isFinite(res) && !isNaN(res)) ? Math.round(res * 1e10) / 1e10 : 'Error';
         } catch {
             display.value = 'Error';
         }
     }
 
-    // Render Saved History & Swipe Attachments
     function renderHistory() {
         savedList.innerHTML = '';
         if (savedRecords.length === 0) {
@@ -268,7 +270,7 @@
             wrapper.innerHTML = `
                 <div class="swipe-background swipe-bg-left">✏️ Edit</div>
                 <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
-                <div class="saved-item" data-id="${item.id}" data-expr="${escapeHTML(String(item.expression))}">
+                <div class="saved-item" data-id="${item.id}">
                     <div class="saved-item-title">${escapeHTML(item.note)}</div>
                     <div style="color:#aaa; font-size:11px;">${item.date} | ${item.time}</div>
                     <div class="saved-item-result">${escapeHTML(String(item.expression))}</div>
@@ -282,19 +284,18 @@
         });
     }
 
-    // Swipe Gestures Logic
     function setupSwipeGesture(element, item) {
         let startX = 0;
         let currentX = 0;
         let isSwiping = false;
 
-        const onTouchStart = (e) => {
+        const onStart = (e) => {
             startX = e.touches ? e.touches[0].clientX : e.clientX;
             isSwiping = true;
             element.style.transition = 'none';
         };
 
-        const onTouchMove = (e) => {
+        const onMove = (e) => {
             if (!isSwiping) return;
             const x = e.touches ? e.touches[0].clientX : e.clientX;
             currentX = x - startX;
@@ -305,20 +306,18 @@
             element.style.transform = `translateX(${currentX}px)`;
         };
 
-        const onTouchEnd = () => {
+        const onEnd = () => {
             if (!isSwiping) return;
             isSwiping = false;
             element.style.transition = 'transform 0.25s ease';
 
             if (currentX > 75) {
-                // Swipe Right -> Edit
                 element.style.transform = 'translateX(0)';
                 editingRecordId = item.id;
                 document.getElementById('edit-note').value = item.note;
                 document.getElementById('edit-expression').value = item.expression;
                 editModal.classList.remove('hidden');
             } else if (currentX < -75) {
-                // Swipe Left -> Delete
                 element.style.transform = 'translateX(-100%)';
                 setTimeout(() => {
                     if (confirm('මෙම දත්තය ඉවත් කිරීමට ඔබට විශ්වාසද?')) {
@@ -340,14 +339,13 @@
             currentX = 0;
         };
 
-        element.addEventListener('touchstart', onTouchStart, { passive: true });
-        element.addEventListener('touchmove', onTouchMove, { passive: true });
-        element.addEventListener('touchend', onTouchEnd);
+        element.addEventListener('touchstart', onStart, { passive: true });
+        element.addEventListener('touchmove', onMove, { passive: true });
+        element.addEventListener('touchend', onEnd);
 
-        element.addEventListener('mousedown', onTouchStart);
-        element.addEventListener('mousemove', (e) => { if (isSwiping) onTouchMove(e); });
-        element.addEventListener('mouseup', onTouchEnd);
-        element.addEventListener('mouseleave', () => { if (isSwiping) onTouchEnd(); });
+        element.addEventListener('mousedown', onStart);
+        window.addEventListener('mousemove', (e) => { if (isSwiping) onMove(e); });
+        window.addEventListener('mouseup', () => { if (isSwiping) onEnd(); });
     }
 
     function closeEdit() {
@@ -410,7 +408,7 @@
                 if (navigator.canShare) {
                     try {
                         fileShareSupported = navigator.canShare({ files: [file] });
-                    } catch (e) {
+                    } catch {
                         fileShareSupported = false;
                     }
                 }
@@ -429,7 +427,7 @@
                         textSummary += `${r.note}: ${r.expression} (${r.date})\n`;
                     });
                     textSummary += `\nApplication Make By :- WAYL Ranaweera`;
-                    
+
                     await navigator.share({
                         title: inputName,
                         text: textSummary
@@ -449,7 +447,7 @@
                 document.body.removeChild(downloadLink);
 
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
-                
+
                 showToast('🎉 File Downloaded Successfully!');
                 closeDownloadModal();
             }
