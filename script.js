@@ -5,7 +5,7 @@
     let savedRecords = [];
     let editingRecordId = null;
 
-    const STORAGE_KEY = 'vasana_app_records_v2';
+    const STORAGE_KEY = 'wm_calculator_records_v1';
 
     document.addEventListener('DOMContentLoaded', initApp);
 
@@ -53,7 +53,6 @@
         return `${year}-${month}-${day}`;
     }
 
-    // Auto-Searchable Suggestions List Generator
     function setupSearchableSuggestions() {
         if (!calcNote || !suggestionsBox) return;
 
@@ -86,17 +85,14 @@
             suggestionsBox.classList.remove('hidden');
         }
 
-        // Click කළ විට suggestions පෙන්වීම
         calcNote.addEventListener('focus', () => {
             showSuggestions(calcNote.value.trim());
         });
 
-        // Type කරද්දී real-time filter වීම
         calcNote.addEventListener('input', () => {
             showSuggestions(calcNote.value.trim());
         });
 
-        // පිටත Click කළ විට suggestions සැඟවීම
         document.addEventListener('click', (e) => {
             if (!calcNote.contains(e.target) && !suggestionsBox.contains(e.target)) {
                 suggestionsBox.classList.add('hidden');
@@ -142,7 +138,6 @@
             }
         });
 
-        // Save Button (💾 Icon Only) Click Event
         document.getElementById('save-btn').addEventListener('click', () => {
             const resultValStr = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
@@ -160,7 +155,6 @@
             );
 
             if (existingIndex !== -1) {
-                // එකම නම තිබේ නම්: පැරණි අගයට අලුත් අගය එකතු වී Update වීම
                 const existingRecord = savedRecords[existingIndex];
                 const oldVal = parseFloat(existingRecord.expression) || 0;
                 const newVal = parseFloat(resultValStr) || 0;
@@ -175,7 +169,6 @@
 
                 showToast(`➕ '${note}' සඳහා අගය එකතු විය! (${totalVal})`);
             } else {
-                // නව නමක් නම්: අලුතින් Record එකක් Save වීම
                 const record = {
                     id: Date.now(),
                     date: formattedDate,
@@ -443,16 +436,15 @@
                     await navigator.share({
                         files: [file],
                         title: inputName,
-                        text: 'Vasana Calculator Data'
+                        text: 'WM Calculator Data'
                     });
                     showToast('🎉 Shared Successfully!');
                     closeDownloadModal();
                 } else if (navigator.share) {
-                    let textSummary = `${getCurrentDateFormatted()} - Data Enter History\n\n`;
+                    let textSummary = `${getCurrentDateFormatted()} - WM Calculator Data\n\n`;
                     savedRecords.forEach(r => {
                         textSummary += `${r.note}: ${r.expression} (${r.date})\n`;
                     });
-                    textSummary += `\nApplication Make By :- WAYL Ranaweera`;
                     
                     await navigator.share({
                         title: inputName,
@@ -508,7 +500,7 @@
         });
 
         tempContainer.innerHTML = `
-            <h2 style="text-align: center; color: #cc7000;">${currentDate} - Data Enter History</h2>
+            <h2 style="text-align: center; color: #cc7000;">${currentDate} - WM Calculator History</h2>
             <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                 <thead>
                     <tr style="background-color: #f4f4f4;">
@@ -520,9 +512,6 @@
                 </thead>
                 <tbody>${tableRows}</tbody>
             </table>
-            <div style="margin-top: 30px; text-align: right; font-size: 11px; color: #666; font-style: italic;">
-                Application Make By :- WAYL Ranaweera
-            </div>
         `;
 
         if (window.html2pdf) {
@@ -540,7 +529,7 @@
     function getXMLContent() {
         const currentDate = getCurrentDateFormatted();
         let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-        xml += `<DataEnterHistory title="${currentDate} - Data Enter History" createdBy="WAYL Ranaweera">\n`;
+        xml += `<DataEnterHistory title="${currentDate} - WM Calculator History">\n`;
         savedRecords.forEach(r => {
             xml += `  <Record>\n`;
             xml += `    <ID>${r.id}</ID>\n`;
@@ -550,7 +539,6 @@
             xml += `    <Time>${r.time}</Time>\n`;
             xml += `  </Record>\n`;
         });
-        xml += `  <Footer>Application Make By :- WAYL Ranaweera</Footer>\n`;
         xml += `</DataEnterHistory>`;
         return xml;
     }
@@ -568,11 +556,10 @@
                 th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
                 th { background-color: #ff8c00; color: white; }
                 tr:nth-child(even) { background-color: #f2f2f2; }
-                .footer-text { margin-top: 30px; text-align: right; font-size: 11px; color: #666; font-style: italic; }
             </style>
         </head>
         <body>
-            <h2>${currentDate} - Data Enter History</h2>
+            <h2>${currentDate} - WM Calculator History</h2>
             <table>
                 <thead>
                     <tr>
@@ -599,9 +586,6 @@
         htmlContent += `
                 </tbody>
             </table>
-            <div class="footer-text">
-                Application Make By :- WAYL Ranaweera
-            </div>
         </body>
         </html>
         `;
@@ -635,11 +619,10 @@
                     th, td { border: 1px solid #ccc; padding: 10px 14px; text-align: left; font-size: 14px; }
                     th { background-color: #f4f4f4; }
                     tr:nth-child(even) { background-color: #fafafa; }
-                    .footer-text { margin-top: 30px; text-align: right; font-size: 12px; color: #666; font-style: italic; }
                 </style>
             </head>
             <body>
-                <h2>${currentDate} - Data Enter History</h2>
+                <h2>${currentDate} - WM Calculator History</h2>
                 <table>
                     <thead>
                         <tr>
@@ -653,9 +636,6 @@
                         ${tableRows}
                     </tbody>
                 </table>
-                <div class="footer-text">
-                    Application Make By :- WAYL Ranaweera
-                </div>
             </body>
             </html>
         `;
