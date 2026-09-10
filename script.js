@@ -53,7 +53,7 @@
         return `${year}-${month}-${day}`;
     }
 
-    // කලින් භාවිත කළ විස්තර (Notes) Dropdown එකට එකතු කිරීම
+    // කලින් භාවිත කළ විස්තර (Notes) Suggestions ලෙස Dropdown එකට එකතු කිරීම
     function updateDatalist() {
         if (!datalist) return;
         datalist.innerHTML = '';
@@ -106,7 +106,7 @@
             }
         });
 
-        // Save Button Click Event (Auto-Summing Feature Added)
+        // Save Button Logic (Auto-summing if note already exists)
         document.getElementById('save-btn').addEventListener('click', () => {
             const resultValStr = display.value.trim();
             const note = calcNote.value.trim() || 'General Calculation';
@@ -123,13 +123,13 @@
             const formattedDate = `${year}-${month}-${day}`;
             const formattedTime = now.toLocaleTimeString();
 
-            // එකම නම තිබේදැයි පරීක්ෂා කිරීම
+            // එකම නමින් Record එකක් ඇත්දැයි පරීක්ෂා කිරීම
             const existingIndex = savedRecords.findIndex(
                 item => item.note.toLowerCase() === note.toLowerCase()
             );
 
             if (existingIndex !== -1) {
-                // එකම නම තිබේ නම්: පැරණි අගයට අලුත් අගය එකතු (Sum) කර Update කිරීම
+                // තිබේ නම්, පැරණි අගයට අලුත් අගය එකතු (Add) කිරීම
                 const existingRecord = savedRecords[existingIndex];
                 const oldVal = parseFloat(existingRecord.expression) || 0;
                 const newVal = parseFloat(resultValStr) || 0;
@@ -144,7 +144,7 @@
 
                 showToast(`➕ '${note}' සඳහා අගය එකතු විය! (මුළු අගය: ${totalVal})`);
             } else {
-                // අලුත් නමක් නම්: නව Record එකක් ලෙස Save කිරීම
+                // නැතහොත් නව Record එකක් ලෙස Save කිරීම
                 const record = {
                     id: Date.now(),
                     date: formattedDate,
@@ -253,7 +253,7 @@
         }
     }
 
-    // Saved History Render Function with Swipe Elements
+    // Render Saved History & Swipe Attachments
     function renderHistory() {
         savedList.innerHTML = '';
         if (savedRecords.length === 0) {
@@ -282,7 +282,7 @@
         });
     }
 
-    // Touch & Drag Swipe Gesture Handler
+    // Swipe Gestures Logic
     function setupSwipeGesture(element, item) {
         let startX = 0;
         let currentX = 0;
@@ -311,14 +311,14 @@
             element.style.transition = 'transform 0.25s ease';
 
             if (currentX > 75) {
-                // Swipe Right -> EDIT
+                // Swipe Right -> Edit
                 element.style.transform = 'translateX(0)';
                 editingRecordId = item.id;
                 document.getElementById('edit-note').value = item.note;
                 document.getElementById('edit-expression').value = item.expression;
                 editModal.classList.remove('hidden');
             } else if (currentX < -75) {
-                // Swipe Left -> DELETE
+                // Swipe Left -> Delete
                 element.style.transform = 'translateX(-100%)';
                 setTimeout(() => {
                     if (confirm('මෙම දත්තය ඉවත් කිරීමට ඔබට විශ්වාසද?')) {
@@ -332,7 +332,6 @@
                 }, 100);
             } else {
                 element.style.transform = 'translateX(0)';
-                // Single Click -> Load Value to Calculator Display
                 if (Math.abs(currentX) < 5) {
                     display.value = item.expression;
                     savedModal.classList.add('hidden');
