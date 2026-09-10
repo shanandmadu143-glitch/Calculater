@@ -5,41 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vasana Calculator</title>
     <link rel="stylesheet" href="style.css">
-    <!-- html2pdf Library for PDF Generation -->
+    <!-- Optional: html2pdf library for PDF exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
     <div class="calculator-card">
-        <!-- Date & Time Header -->
-        <div class="datetime-header">
-            <span id="current-date">YYYY-MM-DD</span> | <span id="current-time">00:00:00 AM</span>
+        <!-- Header Clock -->
+        <div class="clock-header">
+            <span id="current-date">--</span>
+            <span id="current-time">--</span>
         </div>
 
-        <!-- Calculator Display -->
-        <div class="display-container">
-            <input type="text" id="display" readonly placeholder="0">
-        </div>
+        <!-- Display -->
+        <input type="text" id="display" readonly placeholder="0">
 
-        <!-- Note Input with Datalist Suggestions -->
+        <!-- Note Input Field with Suggestions -->
         <div class="note-container">
             <input type="text" id="calc-note" list="saved-notes-list" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." maxlength="50" autocomplete="off">
-            <datalist id="saved-notes-list">
-                <!-- Javascript මගින් Saved Notes මෙතැනට Auto Add වේ -->
-            </datalist>
-            <button id="save-btn" type="button" title="Save Calculation">💾 Save</button>
+            <datalist id="saved-notes-list"></datalist>
+            <button id="save-btn" type="button">💾 Save</button>
         </div>
 
-        <!-- Action & View Buttons -->
-        <div class="top-actions">
-            <button id="view-btn" type="button">📋 View Saved History</button>
-            <button id="download-btn" type="button">📥 Export / Share</button>
-        </div>
-
-        <!-- Keypad Buttons -->
+        <!-- Keypad -->
         <div class="buttons">
-            <button data-action="clear" class="btn-func">C</button>
-            <button data-action="delete" class="btn-func">⌫</button>
+            <button data-action="clear" class="btn-action">C</button>
+            <button data-action="delete" class="btn-action">⌫</button>
             <button data-val="/" class="btn-op">÷</button>
             <button data-val="*" class="btn-op">×</button>
 
@@ -56,87 +47,84 @@
             <button data-val="1">1</button>
             <button data-val="2">2</button>
             <button data-val="3">3</button>
-            <button data-action="calculate" class="btn-equal">=</button>
+            <button data-action="calculate" class="btn-equals">=</button>
 
             <button data-val="0" class="btn-zero">0</button>
             <button data-val=".">.</button>
         </div>
+
+        <!-- Action Bar -->
+        <div class="bottom-actions">
+            <button id="view-btn">📋 Saved History</button>
+            <button id="download-btn">📥 Export / Share</button>
+        </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Toast Message -->
     <div id="toast-message" class="toast hidden"></div>
 
     <!-- Saved History Modal -->
     <div id="saved-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📜 Saved History</h3>
+                <h3>💾 Saved History</h3>
                 <button id="close-modal-btn" class="close-btn">&times;</button>
             </div>
-            <p style="font-size:11px; color:#aaa; margin-bottom:10px; text-align:center;">
-                👉 දකුණට Swipe කර Edit කරන්න | 👈 වමට Swipe කර Delete කරන්න
-            </p>
-            <div id="saved-list" class="saved-list-container">
-                <!-- Saved items rendered dynamically -->
-            </div>
+            <p class="swipe-hint">💡 Tip: Swipe Right to Edit | Swipe Left to Delete</p>
+            <div id="saved-list" class="saved-list-container"></div>
             <div class="modal-footer">
-                <button id="clear-all-btn" class="btn-danger">Clear All History</button>
+                <button id="clear-all-btn" class="btn-danger">Clear All</button>
             </div>
         </div>
     </div>
 
-    <!-- Edit Record Modal -->
+    <!-- Edit Item Modal -->
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>✏️ Edit Record</h3>
-                <button id="close-edit-btn" class="close-btn">&times;</button>
-            </div>
-            <div class="edit-form">
-                <label>විස්තරය / නම:</label>
-                <input type="text" id="edit-note" maxlength="50">
-                
-                <label>ගණන / අගය:</label>
-                <input type="text" id="edit-expression">
+            <h3>✏️ Edit Item</h3>
+            <label for="edit-note">Note / Description:</label>
+            <input type="text" id="edit-note" class="modal-input">
+            
+            <label for="edit-expression">Value / Amount:</label>
+            <input type="text" id="edit-expression" class="modal-input">
 
-                <div class="modal-buttons" style="margin-top: 15px;">
-                    <button id="save-edit-btn" class="btn-success">Update</button>
-                    <button id="cancel-edit-btn" class="btn-secondary">Cancel</button>
-                </div>
+            <div class="modal-actions">
+                <button id="save-edit-btn" class="btn-primary">Save Changes</button>
+                <button id="cancel-edit-btn" class="btn-secondary">Cancel</button>
+                <button id="close-edit-btn" class="hidden"></button>
             </div>
         </div>
     </div>
 
-    <!-- Export / Share Modal -->
+    <!-- Export Modal -->
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📤 Export or Share Data</h3>
+                <h3>📥 Export / Share Data</h3>
                 <button id="close-download-btn" class="close-btn">&times;</button>
             </div>
-            <div class="export-form">
-                <label for="export-filename">File Name:</label>
-                <input type="text" id="export-filename" placeholder="Enter file name..." maxlength="30">
+            
+            <label for="export-filename">File Name:</label>
+            <input type="text" id="export-filename" class="modal-input" placeholder="Enter file name...">
 
-                <label for="export-format">Select Format:</label>
-                <select id="export-format">
-                    <option value="pdf">PDF Document (.pdf)</option>
-                    <option value="word">Word Document (.doc)</option>
-                    <option value="xml">XML Document (.xml)</option>
-                    <option value="html">HTML Web Page (.html)</option>
-                </select>
+            <label for="export-format">Select Format:</label>
+            <select id="export-format" class="modal-input">
+                <option value="pdf">PDF Document (.pdf)</option>
+                <option value="word">Word Document (.doc)</option>
+                <option value="xml">XML File (.xml)</option>
+                <option value="html">HTML File (.html)</option>
+            </select>
 
-                <div class="modal-buttons">
-                    <button id="confirm-download-btn" class="btn-primary">
-                        <span id="download-spinner" class="spinner hidden"></span>
-                        <span id="download-btn-text">Download</span>
-                    </button>
-                    <button id="confirm-share-btn" class="btn-share">
-                        <span id="share-spinner" class="spinner hidden"></span>
-                        <span id="share-btn-text">🔗 Share File</span>
-                    </button>
-                    <button id="cancel-download-btn" class="btn-secondary">Cancel</button>
-                </div>
+            <div class="modal-actions">
+                <button id="confirm-download-btn" class="btn-primary">
+                    <span id="download-spinner" class="spinner hidden"></span>
+                    <span id="download-btn-text">Download</span>
+                </button>
+                <button id="confirm-share-btn" class="btn-share">
+                    <span id="share-spinner" class="spinner hidden"></span>
+                    <span id="share-btn-text">🔗 Share File</span>
+                </button>
+                <button id="cancel-download-btn" class="btn-secondary">Cancel</button>
             </div>
         </div>
     </div>
