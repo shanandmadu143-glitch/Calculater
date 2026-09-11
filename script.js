@@ -325,6 +325,67 @@
         document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
     }
 
+    // Modern Styled Template Generator for PDF & HTML Export
+    function generateExportHTML(title) {
+        let totalSum = 0;
+        const rows = savedRecords.map((r, index) => {
+            const valNum = parseFloat(r.expression) || 0;
+            totalSum += valNum;
+            return `
+                <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">${r.date} <br><span style="color:#9ca3af; font-size:11px;">${r.time}</span></td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 14px;">${escapeHTML(r.note)}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 15px; text-align: right;">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 750px; margin: auto; background: #ffffff;">
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">WM CALCULATOR PRO</h1>
+                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Calculation Statement & History Report</p>
+                    </div>
+                    <div style="text-align: right; color: #6b7280; font-size: 12px;">
+                        <div>Date: ${new Date().toLocaleDateString()}</div>
+                        <div>Total Items: ${savedRecords.length}</div>
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; border-radius: 6px 0 0 0;">Date & Time</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (Note)</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right; border-radius: 0 6px 0 0;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+
+                <!-- Total Box -->
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+                    <div style="background: #fff7ed; border: 1px solid #ff9800; padding: 12px 20px; border-radius: 8px; text-align: right; min-width: 220px;">
+                        <span style="font-size: 13px; color: #c2410c; font-weight: 600; display: block;">GRAND TOTAL</span>
+                        <span style="font-size: 22px; color: #9a3412; font-weight: 800;">${totalSum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                </div>
+
+                <!-- Watermark Footer -->
+                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 20px;">
+                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 0.5px;">
+                        Application created by Yomal Lakshan
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+
     // Direct Web Share API Integration with Fallback
     async function processExport(isShare = false) {
         const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
@@ -336,14 +397,15 @@
 
         if (format === 'pdf' && window.html2pdf) {
             const tempDiv = document.createElement('div');
-            tempDiv.style.padding = '20px';
-            tempDiv.style.color = '#000';
-            tempDiv.innerHTML = `<h2>WM Calculator History</h2><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%;">
-                <tr><th>Date</th><th>Note</th><th>Value</th></tr>` +
-                savedRecords.map(r => `<tr><td>${r.date} ${r.time}</td><td>${escapeHTML(r.note)}</td><td>${r.expression}</td></tr>`).join('') +
-                `</table>`;
+            tempDiv.innerHTML = generateExportHTML(fname);
 
-            const opt = { margin: 10, filename: `${fname}.pdf` };
+            const opt = { 
+                margin: 8, 
+                filename: `${fname}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
             
             if (isShare) {
                 const pdfWorker = html2pdf().set(opt).from(tempDiv);
@@ -358,9 +420,7 @@
             mimeType = format === 'html' ? 'text/html' : 'text/xml';
             let content = '';
             if (format === 'html') {
-                content = `<html><head><title>${fname}</title></head><body><h2>Calculation History</h2><table border="1"><tr><th>Date</th><th>Note</th><th>Value</th></tr>` +
-                    savedRecords.map(r => `<tr><td>${r.date} ${r.time}</td><td>${escapeHTML(r.note)}</td><td>${r.expression}</td></tr>`).join('') +
-                    `</table></body></html>`;
+                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
             } else {
                 content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
                     savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><value>${r.expression}</value></record>`).join('') +
@@ -370,7 +430,9 @@
         } else {
             mimeType = 'application/msword';
             extension = 'doc';
-            let text = `WM Calculator Report\n\n` + savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression}`).join('\n');
+            let text = `WM CALCULATOR REPORT\n\n` + 
+                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression}`).join('\n') +
+                `\n\n----------------------------------------\nApplication created by Yomal Lakshan`;
             contentBlob = new Blob([text], { type: 'text/plain' });
         }
 
@@ -392,7 +454,9 @@
                     }
                 }
             } else {
-                let summaryText = `WM Calculator History:\n` + savedRecords.map(r => `${r.note}: ${r.expression}`).join('\n');
+                let summaryText = `WM Calculator History:\n` + 
+                    savedRecords.map(r => `${r.note}: ${r.expression}`).join('\n') +
+                    `\n\nApplication created by Yomal Lakshan`;
                 if (navigator.share) {
                     try {
                         await navigator.share({
@@ -494,9 +558,14 @@
                     <div class="swipe-background swipe-bg-left">✏️ Edit</div>
                     <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
                     <div class="saved-item" data-id="${item.id}">
-                        <div class="saved-item-title">${escapeHTML(item.note)}</div>
-                        <div style="color:#888; font-size:11px;">${item.date} | ${item.time}</div>
-                        <div class="saved-item-result">${valNum.toLocaleString('en-US')}</div>
+                        <div class="saved-item-header">
+                            <span class="saved-item-title">${escapeHTML(item.note)}</span>
+                            <span class="saved-item-date">${item.date} | ${item.time}</span>
+                        </div>
+                        <div class="saved-item-body">
+                            <span class="saved-item-label">අගය:</span>
+                            <span class="saved-item-result">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        </div>
                     </div>
                 `;
                 setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
@@ -611,4 +680,3 @@
     function showToast(msg) { toast.innerText = msg; toast.classList.remove('hidden'); setTimeout(() => toast.classList.add('hidden'), 2200); }
     function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
 })();
-
