@@ -4,7 +4,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     user-select: none;
 }
 
@@ -12,7 +12,7 @@ input, select, textarea {
     user-select: text;
 }
 
-/* Theme Color Variables */
+/* Color Themes */
 body.theme-dark {
     --bg-body: #121318;
     --bg-card: #1c1e26;
@@ -72,6 +72,7 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
+/* Calculator Container Layout */
 .calculator-container {
     background: var(--bg-card);
     width: 100%;
@@ -183,7 +184,6 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* Action Bar Grid Layout */
 .action-bar-grid {
     display: grid;
     grid-template-columns: 1fr 52px 52px;
@@ -203,34 +203,18 @@ body {
     align-items: center;
     gap: 6px;
     font-size: 14px;
-    transition: transform 0.1s, opacity 0.2s, background-color 0.2s;
+    transition: transform 0.1s, opacity 0.2s;
 }
 
-.action-btn:active {
-    transform: scale(0.96);
-}
-
-.action-btn.icon-only {
-    font-size: 18px;
-    padding: 0;
-}
+.action-btn:active { transform: scale(0.96); }
+.action-btn.icon-only { font-size: 18px; padding: 0; }
 
 .action-btn.save { background: #2e7d32; }
-.action-btn.save:hover { background: #388e3c; }
-
 .action-btn.view { background: #1565c0; }
-.action-btn.view:hover { background: #1976d2; }
-
 .action-btn.export { background: #e65100; }
-.action-btn.export:hover { background: #f57c00; }
-
 .action-btn.share { background: #6a1b9a; }
-.action-btn.share:hover { background: #8e24aa; }
-
 .action-btn.cancel { background: #424242; }
-.action-btn.cancel:hover { background: #616161; }
 
-/* Keypad Grid */
 .buttons {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -253,14 +237,8 @@ body {
 .btn:active { transform: scale(0.95); }
 
 .btn-op { background: #f57c00; color: #ffffff; border: none; }
-.btn-op:hover { background: #ff9800; }
-
 .btn-cmd { background: #d32f2f; color: #ffffff; border: none; }
-.btn-cmd:hover { background: #e53935; }
-
 .btn-equal { background: #2e7d32; color: #ffffff; grid-row: span 2; height: 100%; border: none; }
-.btn-equal:hover { background: #388e3c; }
-
 .btn-zero { grid-column: span 2; }
 
 /* Modals */
@@ -295,13 +273,9 @@ body {
     margin-bottom: 14px;
 }
 
-.modal-header h3 { font-size: 18px; font-weight: 600; }
-
 .close-x { font-size: 22px; cursor: pointer; color: #888; }
-.close-x:hover { color: var(--text-main); }
-
-/* History List Layout */
 .history-controls { margin-bottom: 12px; }
+
 .history-controls input {
     width: 100%;
     padding: 10px 12px;
@@ -358,21 +332,10 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
-    gap: 8px;
 }
 
-.saved-item-title {
-    font-weight: 700;
-    color: #ff9800;
-    font-size: 15px;
-    word-break: break-word;
-}
-
-.saved-item-date {
-    color: #888888;
-    font-size: 11px;
-    white-space: nowrap;
-}
+.saved-item-title { font-weight: 700; color: #ff9800; font-size: 15px; }
+.saved-item-date { color: #888888; font-size: 11px; }
 
 .saved-item-body {
     display: flex;
@@ -382,7 +345,6 @@ body {
     padding-top: 6px;
 }
 
-.saved-item-label { font-size: 12px; color: #aaa; }
 .saved-item-result { font-size: 17px; font-weight: 800; color: #ffffff; }
 
 .history-total-box {
@@ -396,7 +358,7 @@ body {
     font-size: 14px;
 }
 
-/* Audio Player & Backup Controls */
+/* Music Player & Settings UI */
 .flex-col { flex-direction: column; }
 .align-start { align-items: flex-start; }
 
@@ -443,7 +405,6 @@ body {
     color: var(--text-main);
     border-radius: 8px;
     cursor: pointer;
-    font-size: 13px;
 }
 
 .player-btn.play-btn { background: #ff8c00; color: #ffffff; border: none; }
@@ -469,7 +430,6 @@ body {
     border-radius: 8px;
     cursor: pointer;
     flex: 1;
-    font-weight: 500;
 }
 
 .setting-item {
@@ -488,7 +448,6 @@ body {
     background: var(--btn-bg);
     color: var(--text-main);
     border: 1px solid var(--border-color);
-    outline: none;
 }
 
 .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
@@ -520,7 +479,6 @@ input:checked + .slider:before { transform: translateX(22px); }
 .modal-actions.icon-actions .action-btn { flex: 1; height: 42px; }
 
 .edit-form, .export-form { display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
-.edit-form label, .export-form label { font-weight: 500; margin-bottom: -4px; }
 
 .edit-form input, .export-form input, .export-form select {
     padding: 10px;
@@ -550,41 +508,68 @@ input:checked + .slider:before { transform: translateX(22px); }
 .icon-only-sm { font-size: 15px; padding: 6px 12px; }
 
 /* =========================================================
-   Modern Alert / Toast / Custom Dialog System UI
+   Modern Glassmorphism Toast Popup Alert & Confirmation Dialog System
    ========================================================= */
 
-.toast {
+.toast-container {
     position: fixed;
-    bottom: 30px;
+    top: 20px;
     left: 50%;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.animated-toast {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 22px;
+    min-width: 280px;
+    max-width: 380px;
+    padding: 12px 18px;
     border-radius: 14px;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 1000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(23, 25, 35, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     color: #ffffff;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-}
-
-.toast.show {
-    opacity: 1;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    overflow: hidden;
     pointer-events: auto;
-    transform: translateX(-50%) translateY(0);
+    animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-.toast-success { background: rgba(16, 185, 129, 0.92); border-color: #34d399; }
-.toast-warning { background: rgba(245, 158, 11, 0.92); border-color: #fbbf24; }
-.toast-error { background: rgba(239, 68, 68, 0.92); border-color: #f87171; }
-.toast-info { background: rgba(59, 130, 246, 0.92); border-color: #60a5fa; }
+.animated-toast.toast-hide {
+    animation: toastOut 0.3s ease-in forwards;
+}
+
+.toast-icon { font-size: 20px; display: flex; align-items: center; }
+.toast-message { flex: 1; line-height: 1.4; word-break: break-word; }
+
+.toast-progress {
+    position: absolute;
+    bottom: 0; left: 0; height: 3px; width: 100%;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.toast-progress::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; height: 100%; width: 100%;
+    background: currentColor;
+    animation: progressLinear var(--duration, 3s) linear forwards;
+}
+
+.toast-success { border-color: rgba(52, 211, 153, 0.4); color: #34d399; }
+.toast-error { border-color: rgba(248, 113, 113, 0.4); color: #f87171; }
+.toast-warning { border-color: rgba(251, 191, 36, 0.4); color: #fbbf24; }
+.toast-info { border-color: rgba(96, 165, 250, 0.4); color: #60a5fa; }
 
 .custom-alert-overlay {
     position: fixed;
@@ -624,12 +609,15 @@ input:checked + .slider:before { transform: translateX(22px); }
     font-size: 13px;
     border: none;
     cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
+    transition: transform 0.1s;
 }
 
 .custom-alert-btn:active { transform: scale(0.95); }
 .btn-alert-confirm { background: #ef4444; color: #ffffff; }
 .btn-alert-cancel { background: #3f3f46; color: #ffffff; }
 
+@keyframes toastIn { from { opacity: 0; transform: translateY(-30px) scale(0.85); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes toastOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-20px) scale(0.9); } }
+@keyframes progressLinear { from { width: 100%; } to { width: 0%; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scaleUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
