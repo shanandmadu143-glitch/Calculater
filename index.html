@@ -36,11 +36,11 @@
             <div id="custom-suggestions" class="suggestions-box hidden"></div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-bar">
+        <!-- Action Bar: Save Text එක ඉතිරි කර අනිත් ඒවා Icons කළ Layout එක -->
+        <div class="action-bar-grid">
             <button id="save-btn" class="action-btn save">💾 Save</button>
-            <button id="view-btn" class="action-btn view">📜 History බලන්න</button>
-            <button id="download-btn" class="action-btn export">📥 Export / Share</button>
+            <button id="view-btn" class="action-btn view icon-only" title="History බලන්න">📜</button>
+            <button id="download-btn" class="action-btn export icon-only" title="Export / Share">📥</button>
         </div>
 
         <!-- Numpad Buttons -->
@@ -78,14 +78,14 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="txt-saved-title">Saved History</h3>
-                <button id="clear-all-btn" class="danger-btn">සියල්ල මකන්න</button>
+                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
             </div>
 
             <!-- Search & Filter Controls -->
             <div class="history-controls">
-                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම...">
                 <select id="history-filter-cat">
-                    <option value="ALL">සියලු Categories</option>
+                    <option value="ALL">සියල්ල</option>
                     <option value="General">🏷️ සාමාන්‍ය</option>
                     <option value="Groceries">🛒 බඩු ලැයිස්තුව</option>
                     <option value="Bills">🧾 බිල්පත්</option>
@@ -101,7 +101,7 @@
                 <span id="history-total-val">0.00</span>
             </div>
 
-            <button id="close-modal-btn" class="close-btn margin-top-10">Close</button>
+            <button id="close-modal-btn" class="close-btn margin-top-10" title="Close">✖️</button>
         </div>
     </div>
 
@@ -109,7 +109,7 @@
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-edit-title">සංස්කරණය කරන්න</h3>
+                <h3 id="txt-edit-title">සංස්කරණය</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
@@ -124,9 +124,9 @@
                 </select>
                 <label>අගය / Value:</label>
                 <input type="text" id="edit-expression">
-                <div class="modal-actions">
-                    <button id="save-edit-btn" class="action-btn save">Save Changes</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel">Cancel</button>
+                <div class="modal-actions icon-actions">
+                    <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️</button>
                 </div>
             </div>
         </div>
@@ -136,7 +136,7 @@
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-export-title">Export / Share කරන්න</h3>
+                <h3 id="txt-export-title">Export / Share</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
@@ -149,16 +149,16 @@
                     <option value="xml">XML Data (.xml)</option>
                     <option value="html">HTML Webpage (.html)</option>
                 </select>
-                <div class="modal-actions gap-10">
-                    <button id="confirm-download-btn" class="action-btn export">
+                <div class="modal-actions icon-actions">
+                    <button id="confirm-download-btn" class="action-btn export icon-only" title="Download">
                         <span id="download-spinner" class="spinner hidden"></span>
-                        <span id="download-btn-text">Download</span>
+                        <span id="download-btn-text">⬇️</span>
                     </button>
-                    <button id="confirm-share-btn" class="action-btn share">
+                    <button id="confirm-share-btn" class="action-btn share icon-only" title="Share File">
                         <span id="share-spinner" class="spinner hidden"></span>
-                        <span id="share-btn-text">🔗 Share File</span>
+                        <span id="share-btn-text">🔗</span>
                     </button>
-                    <button id="cancel-download-btn" class="action-btn cancel">Cancel</button>
+                    <button id="cancel-download-btn" class="action-btn cancel icon-only" title="Cancel">✖️</button>
                 </div>
             </div>
         </div>
@@ -172,7 +172,6 @@
                 <span id="close-settings-x" class="close-x">&times;</span>
             </div>
             <div class="settings-body">
-                <!-- Color Theme Selector -->
                 <div class="setting-item">
                     <span>Theme</span>
                     <select id="theme-select">
@@ -183,7 +182,6 @@
                     </select>
                 </div>
 
-                <!-- Sound & Haptic Feedback -->
                 <div class="setting-item">
                     <span>Button Sound / Feedback</span>
                     <label class="switch">
@@ -192,13 +190,10 @@
                     </label>
                 </div>
 
-                <!-- Music Player Component with Visualizer & Volume -->
                 <div class="setting-item flex-col align-start">
                     <span id="txt-audio-label">Music Player 🎵</span>
                     <div class="music-player-box">
                         <div id="player-song-title" class="song-title">2026 Sinhala Hit 01</div>
-                        
-                        <!-- Visualizer Bars -->
                         <div id="audio-visualizer" class="visualizer-container">
                             <div class="v-bar"></div>
                             <div class="v-bar"></div>
@@ -209,7 +204,7 @@
 
                         <div class="player-controls">
                             <button id="player-prev-btn" class="player-btn">⏮️</button>
-                            <button id="player-play-btn" class="player-btn play-btn">▶️ Play</button>
+                            <button id="player-play-btn" class="player-btn play-btn">▶️</button>
                             <button id="player-next-btn" class="player-btn">⏭️</button>
                         </div>
 
@@ -220,26 +215,16 @@
                     </div>
                 </div>
 
-                <!-- JSON Backup & Restore -->
                 <div class="setting-item flex-col align-start">
                     <span>Data Backup & Sync</span>
                     <div class="backup-actions">
-                        <button id="export-json-btn" class="btn-small">💾 Export Backup (JSON)</button>
-                        <button id="import-json-btn" class="btn-small">📂 Import Backup</button>
+                        <button id="export-json-btn" class="btn-small" title="Export Backup">💾 Backup</button>
+                        <button id="import-json-btn" class="btn-small" title="Import Backup">📂 Restore</button>
                         <input type="file" id="import-file-input" accept=".json" class="hidden">
                     </div>
                 </div>
-
-                <div class="setting-item">
-                    <span id="txt-lang-label">Language</span>
-                    <select id="language-select">
-                        <option value="si">සිංහල (Sinhala)</option>
-                        <option value="en">English</option>
-                        <option value="ta">தமிழ் (Tamil)</option>
-                    </select>
-                </div>
             </div>
-            <button id="close-settings-btn" class="close-btn margin-top-15">වහන්න</button>
+            <button id="close-settings-btn" class="close-btn margin-top-15" title="Close">✖️</button>
         </div>
     </div>
 
