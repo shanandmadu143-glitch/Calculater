@@ -1,17 +1,16 @@
 (function () {
     'use strict';
 
-    let display, livePreview, calcNote, calcCategory, toast, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
+    let display, livePreview, calcNote, toast, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
     let savedRecords = [];
     let editingRecordId = null;
 
-    const STORAGE_KEY = 'wm_calculator_records_v2';
+    const STORAGE_KEY = 'wm_calculator_records_v3';
 
-    let currentLang = localStorage.getItem('wm_calc_lang') || 'si';
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Audio Context & Player State Variables
+    // Audio Context & Player State
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -32,7 +31,6 @@
         display = document.getElementById('display');
         livePreview = document.getElementById('live-preview');
         calcNote = document.getElementById('calc-note');
-        calcCategory = document.getElementById('calc-category');
         toast = document.getElementById('toast-message');
         savedModal = document.getElementById('saved-modal');
         editModal = document.getElementById('edit-modal');
@@ -58,7 +56,7 @@
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
-    /* Sound Effect Generator */
+    /* Sound Effect */
     function playClickSound() {
         if (!soundEnabled) return;
         if (navigator.vibrate) navigator.vibrate(15);
@@ -77,7 +75,7 @@
         } catch (e) {}
     }
 
-    /* Audio Player with Volume & Visualizer */
+    /* Audio Player Functions */
     function initAudioContext() {
         if (!audioCtx) {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -239,7 +237,6 @@
         document.getElementById('save-btn').addEventListener('click', () => {
             const resultValStr = display.value.trim().replace(/,/g, '');
             const note = calcNote.value.trim() || 'General Calculation';
-            const cat = calcCategory.value;
 
             if (!resultValStr || resultValStr === 'Error') {
                 alert('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!');
@@ -252,7 +249,6 @@
                 date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
                 time: now.toLocaleTimeString(),
                 note: note,
-                category: cat,
                 expression: resultValStr
             };
 
@@ -272,7 +268,6 @@
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
 
         document.getElementById('history-search').addEventListener('input', renderHistory);
-        document.getElementById('history-filter-cat').addEventListener('change', renderHistory);
 
         document.getElementById('clear-all-btn').addEventListener('click', () => {
             if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
@@ -288,10 +283,9 @@
         document.getElementById('save-edit-btn').addEventListener('click', () => {
             if (!editingRecordId) return;
             const newNote = document.getElementById('edit-note').value.trim();
-            const newCat = document.getElementById('edit-category').value;
             const newExpr = document.getElementById('edit-expression').value.trim();
 
-            savedRecords = savedRecords.map(r => r.id === editingRecordId ? { ...r, note: newNote, category: newCat, expression: newExpr } : r);
+            savedRecords = savedRecords.map(r => r.id === editingRecordId ? { ...r, note: newNote, expression: newExpr } : r);
             saveToStorage();
             editModal.classList.add('hidden');
             renderHistory();
@@ -353,12 +347,9 @@
     function renderHistory() {
         savedList.innerHTML = '';
         const searchTxt = document.getElementById('history-search').value.toLowerCase();
-        const filterCat = document.getElementById('history-filter-cat').value;
 
         const filtered = savedRecords.filter(r => {
-            const matchesSearch = r.note.toLowerCase().includes(searchTxt) || String(r.expression).includes(searchTxt);
-            const matchesCat = filterCat === 'ALL' || r.category === filterCat;
-            return matchesSearch && matchesCat;
+            return r.note.toLowerCase().includes(searchTxt) || String(r.expression).includes(searchTxt);
         });
 
         let totalSum = 0;
@@ -376,10 +367,7 @@
                     <div class="swipe-background swipe-bg-left">✏️ Edit</div>
                     <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
                     <div class="saved-item" data-id="${item.id}">
-                        <div class="saved-item-title">
-                            <span>${escapeHTML(item.note)}</span>
-                            <span class="cat-badge">${item.category || 'General'}</span>
-                        </div>
+                        <div class="saved-item-title">${escapeHTML(item.note)}</div>
                         <div style="color:#888; font-size:10px;">${item.date} | ${item.time}</div>
                         <div class="saved-item-result">${valNum.toLocaleString('en-US')}</div>
                     </div>
@@ -411,7 +399,6 @@
                 element.style.transform = 'translateX(0)';
                 editingRecordId = item.id;
                 document.getElementById('edit-note').value = item.note;
-                document.getElementById('edit-category').value = item.category || 'General';
                 document.getElementById('edit-expression').value = item.expression;
                 editModal.classList.remove('hidden');
             } else if (currentX < -60) {
