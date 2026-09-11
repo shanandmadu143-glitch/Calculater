@@ -14,8 +14,10 @@
         <!-- Header Section -->
         <div class="calc-header">
             <span id="current-date">0000-00-00</span>
-            <span class="app-title">WM Calculator</span>
-            <span id="current-time">00:00:00 AM</span>
+            <div class="header-right">
+                <span class="app-title">WM Calculator</span>
+                <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">⚙️</button>
+            </div>
         </div>
 
         <!-- Display Screen -->
@@ -68,10 +70,41 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="txt-settings-title">⚙️ Settings</h3>
+            
+            <!-- Theme Switch -->
+            <div class="setting-row">
+                <label id="txt-theme-label" for="theme-toggle">Dark Mode</label>
+                <label class="switch">
+                    <input type="checkbox" id="theme-toggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <!-- Language Selector -->
+            <div class="setting-row vertical-setting">
+                <label id="txt-lang-label" for="language-select">Language / භාෂාව / மொழி</label>
+                <select id="language-select">
+                    <option value="si">සිංහල (Sinhala)</option>
+                    <option value="en">English</option>
+                    <option value="ta">தமிழ் (Tamil)</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button id="close-settings-btn" class="btn-secondary">Close</button>
+            </div>
+            <button id="close-settings-x" class="close-x">&times;</button>
+        </div>
+    </div>
+
     <!-- Saved History Modal -->
     <div id="saved-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Saved Calculations History</h3>
+            <h3 id="txt-saved-title">Saved Calculations History</h3>
             <div id="saved-list" class="saved-list"></div>
             <div class="modal-actions">
                 <button id="clear-all-btn" class="btn-danger">Clear All History</button>
@@ -83,7 +116,7 @@
     <!-- Edit Record Modal -->
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Edit Record</h3>
+            <h3 id="txt-edit-title">Edit Record</h3>
             <input type="text" id="edit-note" placeholder="Note / Title" maxlength="50">
             <input type="text" id="edit-expression" placeholder="Value / Expression">
             <div class="modal-actions">
@@ -97,7 +130,7 @@
     <!-- Download/Export Modal -->
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>Export or Share History</h3>
+            <h3 id="txt-export-title">Export or Share History</h3>
             <div class="form-group">
                 <label for="export-filename">File Name:</label>
                 <input type="text" id="export-filename" placeholder="Enter File Name (e.g. My_Expenses)">
