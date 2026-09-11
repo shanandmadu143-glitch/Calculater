@@ -10,7 +10,7 @@
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Audio Context & Player State
+    // Audio State Variables
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -56,7 +56,6 @@
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
-    /* Sound Effect */
     function playClickSound() {
         if (!soundEnabled) return;
         if (navigator.vibrate) navigator.vibrate(15);
@@ -75,7 +74,6 @@
         } catch (e) {}
     }
 
-    /* Audio Player Functions */
     function initAudioContext() {
         if (!audioCtx) {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -183,6 +181,7 @@
 
         if (volumeInput) {
             volumeInput.addEventListener('input', (e) => {
+                initAudioContext();
                 if (masterGain && audioCtx) {
                     masterGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime);
                 }
@@ -201,7 +200,6 @@
             updatePlayerUI();
         });
 
-        // Backup & Restore
         document.getElementById('export-json-btn').addEventListener('click', exportBackupJSON);
         document.getElementById('import-json-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
         document.getElementById('import-file-input').addEventListener('change', importBackupJSON);
@@ -235,7 +233,7 @@
         });
 
         document.getElementById('save-btn').addEventListener('click', () => {
-            const resultValStr = display.value.trim().replace(/,/g, '');
+            let resultValStr = display.value.trim().replace(/,/g, '');
             const note = calcNote.value.trim() || 'General Calculation';
 
             if (!resultValStr || resultValStr === 'Error') {
@@ -266,7 +264,6 @@
         });
 
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
-
         document.getElementById('history-search').addEventListener('input', renderHistory);
 
         document.getElementById('clear-all-btn').addEventListener('click', () => {
@@ -293,11 +290,58 @@
 
         document.getElementById('download-btn').addEventListener('click', () => {
             if (savedRecords.length === 0) return alert('Export කිරීමට දත්ත නොමැත!');
+            document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
             downloadModal.classList.remove('hidden');
         });
 
         document.getElementById('close-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
         document.getElementById('cancel-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
+
+        document.getElementById('confirm-download-btn').addEventListener('click', processExport);
+        document.getElementById('confirm-share-btn').addEventListener('click', processExport);
+    }
+
+    function processExport() {
+        const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
+        const format = document.getElementById('export-format').value;
+
+        if (format === 'pdf' && window.html2pdf) {
+            const tempDiv = document.createElement('div');
+            tempDiv.style.padding = '20px';
+            tempDiv.style.color = '#000';
+            tempDiv.innerHTML = `<h2>WM Calculator History</h2><table border="1" cellpadding="8" style="border-collapse:collapse;width:100%;">
+                <tr><th>Date</th><th>Note</th><th>Value</th></tr>` +
+                savedRecords.map(r => `<tr><td>${r.date} ${r.time}</td><td>${escapeHTML(r.note)}</td><td>${r.expression}</td></tr>`).join('') +
+                `</table>`;
+            
+            html2pdf().set({ margin: 10, filename: `${fname}.pdf` }).from(tempDiv).save();
+        } else if (format === 'html' || format === 'xml') {
+            let content = '';
+            if (format === 'html') {
+                content = `<html><head><title>${fname}</title></head><body><h2>Calculation History</h2><table border="1"><tr><th>Date</th><th>Note</th><th>Value</th></tr>` +
+                    savedRecords.map(r => `<tr><td>${r.date} ${r.time}</td><td>${escapeHTML(r.note)}</td><td>${r.expression}</td></tr>`).join('') +
+                    `</table></body></html>`;
+            } else {
+                content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
+                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><value>${r.expression}</value></record>`).join('') +
+                    `</records>`;
+            }
+            const blob = new Blob([content], { type: format === 'html' ? 'text/html' : 'text/xml' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${fname}.${format}`;
+            a.click();
+        } else {
+            let text = `WM Calculator Report\n\n` + savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression}`).join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${fname}.doc`;
+            a.click();
+        }
+
+        downloadModal.classList.add('hidden');
+        showToast('📥 Export Completed!');
     }
 
     function appendCharacter(char) {
@@ -320,7 +364,11 @@
                 const res = Function(`'use strict'; return (${expr})`)();
                 if (isFinite(res)) {
                     livePreview.innerText = '= ' + Number(res).toLocaleString('en-US');
+                } else {
+                    livePreview.innerText = '';
                 }
+            } else {
+                livePreview.innerText = '';
             }
         } catch (e) {
             livePreview.innerText = '';
@@ -383,7 +431,11 @@
     function setupSwipeGesture(element, item) {
         let startX = 0, currentX = 0, isSwiping = false;
 
-        const start = (e) => { startX = e.touches ? e.touches[0].clientX : e.clientX; isSwiping = true; element.style.transition = 'none'; };
+        const start = (e) => { 
+            startX = e.touches ? e.touches[0].clientX : e.clientX; 
+            isSwiping = true; 
+            element.style.transition = 'none'; 
+        };
         const move = (e) => {
             if (!isSwiping) return;
             currentX = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
@@ -413,12 +465,15 @@
             currentX = 0;
         };
 
-        element.addEventListener('touchstart', start, {passive:true});
-        element.addEventListener('touchmove', move, {passive:true});
-        element.addEventListener('touchend', end);
-        element.addEventListener('mousedown', start);
-        element.addEventListener('mousemove', (e) => isSwiping && move(e));
-        element.addEventListener('mouseup', end);
+        if ('ontouchstart' in window) {
+            element.addEventListener('touchstart', start, {passive:true});
+            element.addEventListener('touchmove', move, {passive:true});
+            element.addEventListener('touchend', end);
+        } else {
+            element.addEventListener('mousedown', start);
+            element.addEventListener('mousemove', (e) => isSwiping && move(e));
+            element.addEventListener('mouseup', end);
+        }
     }
 
     function exportBackupJSON() {
@@ -463,8 +518,15 @@
             });
             suggestionsBox.classList.remove('hidden');
         }
+        
         calcNote.addEventListener('focus', () => showSuggestions(calcNote.value));
         calcNote.addEventListener('input', () => showSuggestions(calcNote.value));
+
+        document.addEventListener('click', (e) => {
+            if (!calcNote.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.add('hidden');
+            }
+        });
     }
 
     function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords)); }
