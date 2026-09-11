@@ -5,177 +5,172 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WM Calculator</title>
     <link rel="stylesheet" href="style.css">
-    <!-- html2pdf Library for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
-
-    <div class="calculator-card">
-        <!-- Header Section -->
-        <div class="calc-header">
-            <span id="current-date">0000-00-00</span>
-            <div class="header-right">
-                <span class="app-title">WM Calculator</span>
-                <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">⚙️</button>
-            </div>
+    <div class="calculator-container">
+        <!-- Header / Clock -->
+        <div class="header">
+            <span id="current-date">YYYY-MM-DD</span>
+            <span id="current-time">00:00:00 AM</span>
+            <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
         </div>
 
-        <!-- Display Screen -->
+        <!-- Display Area -->
         <div class="display-container">
             <input type="text" id="display" readonly placeholder="0">
         </div>
 
-        <!-- Searchable Input Field & Save Icon Button -->
-        <div class="note-container">
-            <div class="input-wrapper">
-                <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." maxlength="50" autocomplete="off">
-                <!-- Custom Searchable Suggestions List -->
-                <div id="custom-suggestions" class="suggestions-dropdown hidden"></div>
-            </div>
-            <button id="save-btn" type="button" title="Save Calculation" aria-label="Save">
-                <span class="btn-icon">💾</span>
-            </button>
+        <!-- Note Input with Suggestions -->
+        <div class="input-container">
+            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." autocomplete="off">
+            <div id="custom-suggestions" class="suggestions-box hidden"></div>
         </div>
 
-        <!-- Calculator Keypad Buttons -->
+        <!-- Action Buttons -->
+        <div class="action-bar">
+            <button id="save-btn" class="action-btn save">💾 Save</button>
+            <button id="view-btn" class="action-btn view">📜 Saved History බලන්න</button>
+            <button id="download-btn" class="action-btn export">📥 Export / Share</button>
+        </div>
+
+        <!-- Numpad Buttons -->
         <div class="buttons">
-            <button type="button" data-action="clear" class="btn-clear">C</button>
-            <button type="button" data-action="delete" class="btn-action">⌫</button>
-            <button type="button" data-val="/" class="btn-operator">÷</button>
-            <button type="button" data-val="*" class="btn-operator">×</button>
+            <button data-action="clear" class="btn btn-cmd">C</button>
+            <button data-action="delete" class="btn btn-cmd">⌫</button>
+            <button data-val="/" class="btn btn-op">÷</button>
+            <button data-val="*" class="btn btn-op">×</button>
 
-            <button type="button" data-val="7">7</button>
-            <button type="button" data-val="8">8</button>
-            <button type="button" data-val="9">9</button>
-            <button type="button" data-val="-" class="btn-operator">-</button>
+            <button data-val="7" class="btn">7</button>
+            <button data-val="8" class="btn">8</button>
+            <button data-val="9" class="btn">9</button>
+            <button data-val="-" class="btn btn-op">-</button>
 
-            <button type="button" data-val="4">4</button>
+            <button data-val="4" class="btn">4</button>
+            <button data-val="5" class="btn">5</button>
+            <button data-val="6" class="btn">6</button>
+            <button data-val="+" class="btn btn-op">+</button>
 
-            <button type="button" data-val="5">5</button>
-            <button type="button" data-val="6">6</button>
-            <button type="button" data-val="+" class="btn-operator">+</button>
+            <button data-val="1" class="btn">1</button>
+            <button data-val="2" class="btn">2</button>
+            <button data-val="3" class="btn">3</button>
+            <button data-action="calculate" class="btn btn-equal font-lg">=</button>
 
-            <button type="button" data-val="1">1</button>
-            <button type="button" data-val="2">2</button>
-            <button type="button" data-val="3">3</button>
-            <button type="button" data-action="calculate" class="btn-equal">=</button>
-
-            <button type="button" data-val="0" class="btn-zero">0</button>
-            <button type="button" data-val=".">.</button>
-        </div>
-
-        <!-- View History & Download Options Header -->
-        <div class="footer-actions">
-            <button id="view-btn" type="button" class="btn-secondary">📜 View Saved History</button>
-            <button id="download-btn" type="button" class="btn-secondary">📥 Export / Share</button>
+            <button data-val="0" class="btn btn-zero">0</button>
+            <button data-val="." class="btn">.</button>
         </div>
     </div>
 
-    <!-- Hidden Audio Element for Background Music -->
-    <audio id="bg-audio" loop preload="auto">
-        <source src="bg-music.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3 id="txt-settings-title">⚙️ Settings</h3>
-            
-            <!-- Theme Switch -->
-            <div class="setting-row">
-                <label id="txt-theme-label" for="theme-toggle">Dark Mode</label>
-                <label class="switch">
-                    <input type="checkbox" id="theme-toggle" checked>
-                    <span class="slider round"></span>
-                </label>
-            </div>
-
-            <!-- Background Music Switch -->
-            <div class="setting-row">
-                <label id="txt-audio-label" for="audio-toggle">Background Music 🎵</label>
-                <label class="switch">
-                    <input type="checkbox" id="audio-toggle" checked>
-                    <span class="slider round"></span>
-                </label>
-            </div>
-
-            <!-- Language Selector -->
-            <div class="setting-row vertical-setting">
-                <label id="txt-lang-label" for="language-select">Language / භාෂාව / மொழி</label>
-                <select id="language-select">
-                    <option value="si">සිංහල (Sinhala)</option>
-                    <option value="en">English</option>
-                    <option value="ta">தமிழ் (Tamil)</option>
-                </select>
-            </div>
-
-            <div class="modal-actions">
-                <button id="close-settings-btn" class="btn-secondary">Close</button>
-            </div>
-            <button id="close-settings-x" class="close-x">&times;</button>
-        </div>
-    </div>
+    <!-- Toast Notification -->
+    <div id="toast-message" class="toast hidden"></div>
 
     <!-- Saved History Modal -->
     <div id="saved-modal" class="modal hidden">
         <div class="modal-content">
-            <h3 id="txt-saved-title">Saved Calculations History</h3>
-            <div id="saved-list" class="saved-list"></div>
-            <div class="modal-actions">
-                <button id="clear-all-btn" class="btn-danger">Clear All History</button>
-                <button id="close-modal-btn" class="btn-secondary">Close</button>
+            <div class="modal-header">
+                <h3 id="txt-saved-title">Saved Calculations History</h3>
+                <button id="clear-all-btn" class="danger-btn">සියලුම History මකා දමන්න</button>
             </div>
+            <div id="saved-list" class="saved-list"></div>
+            <button id="close-modal-btn" class="close-btn">Close</button>
         </div>
     </div>
 
-    <!-- Edit Record Modal -->
+    <!-- Edit Modal -->
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
-            <h3 id="txt-edit-title">Edit Record</h3>
-            <input type="text" id="edit-note" placeholder="Note / Title" maxlength="50">
-            <input type="text" id="edit-expression" placeholder="Value / Expression">
-            <div class="modal-actions">
-                <button id="save-edit-btn" class="btn-primary">Save Changes</button>
-                <button id="cancel-edit-btn" class="btn-secondary">Cancel</button>
+            <div class="modal-header">
+                <h3 id="txt-edit-title">සංස්කරණය කරන්න</h3>
+                <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
-            <button id="close-edit-btn" class="close-x">&times;</button>
+            <div class="edit-form">
+                <label>විස්තරය / Note:</label>
+                <input type="text" id="edit-note">
+                <label>අගය / Value:</label>
+                <input type="text" id="edit-expression">
+                <div class="modal-actions">
+                    <button id="save-edit-btn" class="action-btn save">Save Changes</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Download/Export Modal -->
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
-            <h3 id="txt-export-title">Export or Share History</h3>
-            <div class="form-group">
-                <label for="export-filename">File Name:</label>
-                <input type="text" id="export-filename" placeholder="Enter File Name (e.g. My_Expenses)">
+            <div class="modal-header">
+                <h3 id="txt-export-title">Export / Share කරන්න</h3>
+                <span id="close-download-btn" class="close-x">&times;</span>
             </div>
-            <div class="form-group">
-                <label for="export-format">Format:</label>
+            <div class="export-form">
+                <label>File Name:</label>
+                <input type="text" id="export-filename" placeholder="Enter file name...">
+                <label>Format:</label>
                 <select id="export-format">
                     <option value="pdf">PDF Document (.pdf)</option>
                     <option value="word">Word Document (.doc)</option>
-                    <option value="xml">XML Document (.xml)</option>
-                    <option value="html">HTML Web Page (.html)</option>
+                    <option value="xml">XML Data (.xml)</option>
+                    <option value="html">HTML Webpage (.html)</option>
                 </select>
+                <div class="modal-actions gap-10">
+                    <button id="confirm-download-btn" class="action-btn export">
+                        <span id="download-spinner" class="spinner hidden"></span>
+                        <span id="download-btn-text">Download</span>
+                    </button>
+                    <button id="confirm-share-btn" class="action-btn share">
+                        <span id="share-spinner" class="spinner hidden"></span>
+                        <span id="share-btn-text">🔗 Share File</span>
+                    </button>
+                    <button id="cancel-download-btn" class="action-btn cancel">Cancel</button>
+                </div>
             </div>
-            <div class="modal-actions vertical">
-                <button id="confirm-download-btn" class="btn-primary">
-                    <span id="download-btn-text">Download</span>
-                    <span id="download-spinner" class="spinner hidden"></span>
-                </button>
-                <button id="confirm-share-btn" class="btn-share">
-                    <span id="share-btn-text">🔗 Share File</span>
-                    <span id="share-spinner" class="spinner hidden"></span>
-                </button>
-                <button id="cancel-download-btn" class="btn-secondary">Cancel</button>
-            </div>
-            <button id="close-download-btn" class="close-x">&times;</button>
         </div>
     </div>
 
-    <!-- Toast Message -->
-    <div id="toast-message" class="toast hidden"></div>
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="txt-settings-title">⚙️ Settings</h3>
+                <span id="close-settings-x" class="close-x">&times;</span>
+            </div>
+            <div class="settings-body">
+                <div class="setting-item">
+                    <span id="txt-theme-label">Dark Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="theme-toggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <!-- Music Player Component -->
+                <div class="setting-item flex-col align-start">
+                    <span id="txt-audio-label">Music Player 🎵</span>
+                    <div class="music-player-box">
+                        <div id="player-song-title" class="song-title">
+                            2026 Sinhala Hit 01 - මාගෙ ආදරේ (Mage Adare)
+                        </div>
+                        <div class="player-controls">
+                            <button id="player-prev-btn" class="player-btn">⏮️ Prev</button>
+                            <button id="player-play-btn" class="player-btn play-btn">▶️ Play</button>
+                            <button id="player-next-btn" class="player-btn">Next ⏭️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <span id="txt-lang-label">භාෂාව (Language)</span>
+                    <select id="language-select">
+                        <option value="si">සිංහල (Sinhala)</option>
+                        <option value="en">English</option>
+                        <option value="ta">தமிழ் (Tamil)</option>
+                    </select>
+                </div>
+            </div>
+            <button id="close-settings-btn" class="close-btn margin-top-15">වහන්න</button>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
