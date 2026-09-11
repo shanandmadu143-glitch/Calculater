@@ -10,7 +10,7 @@
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Audio Engine State Variables
+    // Synth Audio Engine Settings
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -55,28 +55,34 @@
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
-    /* Modern Alert & Toast Notification System */
-    function showToast(msg, type = 'success') {
-        let toast = document.getElementById('toast-message');
-        
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'toast-message';
-            document.body.appendChild(toast);
+    /* Animated Auto-Dismiss Toast Alert System */
+    function showToast(message, type = 'success', duration = 3000) {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
         }
 
-        let icon = '🎉';
-        if (type === 'warning') icon = '⚠️';
-        if (type === 'error') icon = '❌';
-        if (type === 'info') icon = 'ℹ️';
+        const icons = { success: '✨', error: '❌', warning: '⚠️', info: 'ℹ️' };
 
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+        const toast = document.createElement('div');
+        toast.className = `animated-toast toast-${type}`;
+        toast.style.setProperty('--duration', `${duration}ms`);
 
-        setTimeout(() => toast.classList.add('show'), 10);
+        toast.innerHTML = `
+            <div class="toast-icon">${icons[type] || '✨'}</div>
+            <div class="toast-message">${message}</div>
+            <div class="toast-progress"></div>
+        `;
+
+        container.appendChild(toast);
+
         setTimeout(() => {
-            toast.classList.remove('show');
-        }, 2800);
+            toast.classList.add('toast-hide');
+            toast.addEventListener('animationend', () => toast.remove());
+        }, duration);
     }
 
     function showConfirmDialog(title, message, onConfirm) {
@@ -280,7 +286,6 @@
             else if (action === 'calculate') calculateResult();
         });
 
-        // Save logic with cumulative addition & Modern Alerts
         document.getElementById('save-btn').addEventListener('click', () => {
             let resultValStr = display.value.trim().replace(/,/g, '');
             const note = calcNote.value.trim() || 'General Calculation';
@@ -378,7 +383,6 @@
         document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
     }
 
-    // Modern Styled Template Generator for PDF & HTML Export
     function generateExportHTML(title) {
         let totalSum = 0;
         const rows = savedRecords.map((r, index) => {
@@ -397,7 +401,7 @@
             <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 750px; margin: auto; background: #ffffff;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
-                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">WM CALCULATOR PRO</h1>
+                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR PRO</h1>
                         <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Calculation Statement & History Report</p>
                     </div>
                     <div style="text-align: right; color: #6b7280; font-size: 12px;">
@@ -409,9 +413,9 @@
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                     <thead>
                         <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; border-radius: 6px 0 0 0;">Date & Time</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Date & Time</th>
                             <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (Note)</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right; border-radius: 0 6px 0 0;">Amount</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -426,8 +430,8 @@
                     </div>
                 </div>
 
-                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 20px;">
-                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 0.5px;">
+                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">
                         Application created by Yomal Lakshan
                     </p>
                 </div>
@@ -487,36 +491,15 @@
 
         if (isShare) {
             const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
-            
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
-                    await navigator.share({
-                        files: [file],
-                        title: fname,
-                        text: 'WM Calculator History Report'
-                    });
+                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator History Report' });
                     showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
                 } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        showToast('Sharing අසමත් විය. Download කරනු ලැබේ...', 'info');
-                        downloadBlob(contentBlob, `${fname}.${extension}`);
-                    }
+                    if (err.name !== 'AbortError') downloadBlob(contentBlob, `${fname}.${extension}`);
                 }
             } else {
-                let summaryText = `WM Calculator History:\n` + 
-                    savedRecords.map(r => `${r.note}: ${r.expression}`).join('\n') +
-                    `\n\nApplication created by Yomal Lakshan`;
-                if (navigator.share) {
-                    try {
-                        await navigator.share({ title: fname, text: summaryText });
-                        showToast('🔗 Text ලෙස Share කරන ලදී!', 'success');
-                    } catch (e) {}
-                } else if (navigator.clipboard) {
-                    navigator.clipboard.writeText(summaryText);
-                    showToast('📋 Clipboard එකට Copy කරන ලදී!', 'info');
-                } else {
-                    downloadBlob(contentBlob, `${fname}.${extension}`);
-                }
+                downloadBlob(contentBlob, `${fname}.${extension}`);
             }
         } else {
             downloadBlob(contentBlob, `${fname}.${extension}`);
