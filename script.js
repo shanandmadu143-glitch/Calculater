@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    let display, livePreview, calcNote, toast, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
+    let display, livePreview, calcNote, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
     let savedRecords = [];
     let editingRecordId = null;
 
@@ -10,7 +10,7 @@
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Audio State Variables
+    // Audio Engine State Variables
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -31,7 +31,6 @@
         display = document.getElementById('display');
         livePreview = document.getElementById('live-preview');
         calcNote = document.getElementById('calc-note');
-        toast = document.getElementById('toast-message');
         savedModal = document.getElementById('saved-modal');
         editModal = document.getElementById('edit-modal');
         downloadModal = document.getElementById('download-modal');
@@ -54,6 +53,55 @@
 
         const sToggle = document.getElementById('sound-toggle');
         if (sToggle) sToggle.checked = soundEnabled;
+    }
+
+    /* Modern Alert & Toast Notification System */
+    function showToast(msg, type = 'success') {
+        let toast = document.getElementById('toast-message');
+        
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast-message';
+            document.body.appendChild(toast);
+        }
+
+        let icon = '🎉';
+        if (type === 'warning') icon = '⚠️';
+        if (type === 'error') icon = '❌';
+        if (type === 'info') icon = 'ℹ️';
+
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2800);
+    }
+
+    function showConfirmDialog(title, message, onConfirm) {
+        const overlay = document.createElement('div');
+        overlay.className = 'custom-alert-overlay';
+
+        overlay.innerHTML = `
+            <div class="custom-alert-box">
+                <div class="custom-alert-icon">⚠️</div>
+                <div class="custom-alert-title">${title}</div>
+                <div class="custom-alert-msg">${message}</div>
+                <div class="custom-alert-actions">
+                    <button class="custom-alert-btn btn-alert-cancel" id="alert-cancel-btn">අවලංගු කරන්න</button>
+                    <button class="custom-alert-btn btn-alert-confirm" id="alert-confirm-btn">ඔවු, මකන්න</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        document.getElementById('alert-cancel-btn').onclick = () => overlay.remove();
+        document.getElementById('alert-confirm-btn').onclick = () => {
+            overlay.remove();
+            onConfirm();
+        };
     }
 
     function playClickSound() {
@@ -232,19 +280,19 @@
             else if (action === 'calculate') calculateResult();
         });
 
-        // Cumulative Save logic: Existing Note එකක් දුන් විට පරණ අගයට අලුත් අගය එකතු වේ
+        // Save logic with cumulative addition & Modern Alerts
         document.getElementById('save-btn').addEventListener('click', () => {
             let resultValStr = display.value.trim().replace(/,/g, '');
             const note = calcNote.value.trim() || 'General Calculation';
 
             if (!resultValStr || resultValStr === 'Error') {
-                alert('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!');
+                showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
                 return;
             }
 
             const newValue = parseFloat(resultValStr);
             if (isNaN(newValue)) {
-                alert('ඇතුළත් කළ අගය නිවැරදි නැත!');
+                showToast('ඇතුළත් කළ අගය නිවැරදි නැත!', 'error');
                 return;
             }
 
@@ -252,7 +300,6 @@
             const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             const formattedTime = now.toLocaleTimeString();
 
-            // Check if note already exists
             const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
 
             if (existingIndex !== -1) {
@@ -263,7 +310,7 @@
                 savedRecords[existingIndex].date = formattedDate;
                 savedRecords[existingIndex].time = formattedTime;
                 
-                showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`);
+                showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`, 'info');
             } else {
                 const record = {
                     id: Date.now(),
@@ -273,7 +320,7 @@
                     expression: newValue.toString()
                 };
                 savedRecords.push(record);
-                showToast('🎉 Data Saved Successfully!');
+                showToast('🎉 Data Saved Successfully!', 'success');
             }
 
             saveToStorage();
@@ -291,11 +338,16 @@
         document.getElementById('history-search').addEventListener('input', renderHistory);
 
         document.getElementById('clear-all-btn').addEventListener('click', () => {
-            if (confirm('සියලුම History මකා දැමීමට ඔබට විශ්වාසද?')) {
-                savedRecords = [];
-                saveToStorage();
-                renderHistory();
-            }
+            showConfirmDialog(
+                'සියල්ල මකා දැමීම', 
+                'Saved History එකෙහි ඇති සියලුම දත්ත මකා දැමීමට ඔබට විශ්වාසද?', 
+                () => {
+                    savedRecords = [];
+                    saveToStorage();
+                    renderHistory();
+                    showToast('History සාර්ථකව මකා දැමීය!', 'info');
+                }
+            );
         });
 
         document.getElementById('close-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
@@ -310,10 +362,11 @@
             saveToStorage();
             editModal.classList.add('hidden');
             renderHistory();
+            showToast('සංස්කරණය සාර්ථකයි!', 'success');
         });
 
         document.getElementById('download-btn').addEventListener('click', () => {
-            if (savedRecords.length === 0) return alert('Export කිරීමට දත්ත නොමැත!');
+            if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
             document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
             downloadModal.classList.remove('hidden');
         });
@@ -342,7 +395,6 @@
 
         return `
             <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 750px; margin: auto; background: #ffffff;">
-                <!-- Header -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
                         <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">WM CALCULATOR PRO</h1>
@@ -354,7 +406,6 @@
                     </div>
                 </div>
 
-                <!-- Data Table -->
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                     <thead>
                         <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
@@ -368,7 +419,6 @@
                     </tbody>
                 </table>
 
-                <!-- Total Box -->
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
                     <div style="background: #fff7ed; border: 1px solid #ff9800; padding: 12px 20px; border-radius: 8px; text-align: right; min-width: 220px;">
                         <span style="font-size: 13px; color: #c2410c; font-weight: 600; display: block;">GRAND TOTAL</span>
@@ -376,7 +426,6 @@
                     </div>
                 </div>
 
-                <!-- Watermark Footer -->
                 <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px; margin-top: 20px;">
                     <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 0.5px;">
                         Application created by Yomal Lakshan
@@ -386,7 +435,6 @@
         `;
     }
 
-    // Direct Web Share API Integration with Fallback
     async function processExport(isShare = false) {
         const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
         const format = document.getElementById('export-format').value;
@@ -414,6 +462,7 @@
             } else {
                 html2pdf().set(opt).from(tempDiv).save();
                 downloadModal.classList.add('hidden');
+                showToast('📥 PDF Download සාර්ථකයි!', 'success');
                 return;
             }
         } else if (format === 'html' || format === 'xml') {
@@ -446,10 +495,10 @@
                         title: fname,
                         text: 'WM Calculator History Report'
                     });
-                    showToast('🔗 Share කිරීම සාර්ථකයි!');
+                    showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
                 } catch (err) {
                     if (err.name !== 'AbortError') {
-                        showToast('Sharing අසමත් විය. File එක Download කරනු ලැබේ...');
+                        showToast('Sharing අසමත් විය. Download කරනු ලැබේ...', 'info');
                         downloadBlob(contentBlob, `${fname}.${extension}`);
                     }
                 }
@@ -459,15 +508,12 @@
                     `\n\nApplication created by Yomal Lakshan`;
                 if (navigator.share) {
                     try {
-                        await navigator.share({
-                            title: fname,
-                            text: summaryText
-                        });
-                        showToast('🔗 Text ලෙස Share කරන ලදී!');
+                        await navigator.share({ title: fname, text: summaryText });
+                        showToast('🔗 Text ලෙස Share කරන ලදී!', 'success');
                     } catch (e) {}
                 } else if (navigator.clipboard) {
                     navigator.clipboard.writeText(summaryText);
-                    showToast('📋 Clipboard එකට Copy කරන ලදී!');
+                    showToast('📋 Clipboard එකට Copy කරන ලදී!', 'info');
                 } else {
                     downloadBlob(contentBlob, `${fname}.${extension}`);
                 }
@@ -484,7 +530,7 @@
         a.href = URL.createObjectURL(blob);
         a.download = filename;
         a.click();
-        showToast('📥 Download Completed!');
+        showToast('📥 Download Completed!', 'success');
     }
 
     function appendCharacter(char) {
@@ -507,12 +553,8 @@
                 const res = Function(`'use strict'; return (${expr})`)();
                 if (isFinite(res)) {
                     livePreview.innerText = '= ' + Number(res).toLocaleString('en-US');
-                } else {
-                    livePreview.innerText = '';
-                }
-            } else {
-                livePreview.innerText = '';
-            }
+                } else livePreview.innerText = '';
+            } else livePreview.innerText = '';
         } catch (e) {
             livePreview.innerText = '';
         }
@@ -527,9 +569,7 @@
                 const rounded = Math.round(res * 1e10) / 1e10;
                 display.value = rounded.toLocaleString('en-US');
                 livePreview.innerText = '';
-            } else {
-                display.value = 'Error';
-            }
+            } else display.value = 'Error';
         } catch {
             display.value = 'Error';
         }
@@ -602,13 +642,17 @@
                 document.getElementById('edit-expression').value = item.expression;
                 editModal.classList.remove('hidden');
             } else if (currentX < -60) {
-                element.style.transform = 'translateX(-100%)';
-                setTimeout(() => {
-                    if (confirm('මෙය මකා දැමීමට නිසැකද?')) {
+                element.style.transform = 'translateX(0)';
+                showConfirmDialog(
+                    'මකා දැමීම', 
+                    `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
+                    () => {
                         savedRecords = savedRecords.filter(r => r.id !== item.id);
-                        saveToStorage(); renderHistory();
-                    } else element.style.transform = 'translateX(0)';
-                }, 100);
+                        saveToStorage(); 
+                        renderHistory();
+                        showToast('දත්තය මකා දමන ලදී!', 'info');
+                    }
+                );
             } else element.style.transform = 'translateX(0)';
             currentX = 0;
         };
@@ -639,11 +683,11 @@
                 if (Array.isArray(data)) {
                     savedRecords = data;
                     saveToStorage();
-                    showToast('🎉 Backup Restored Successfully!');
+                    showToast('🎉 Backup Restored Successfully!', 'success');
                     renderHistory();
                 }
             } catch (err) {
-                alert('Invalid Backup File!');
+                showToast('Invalid Backup File!', 'error');
             }
         };
         reader.readAsText(file);
@@ -677,6 +721,5 @@
     }
 
     function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords)); }
-    function showToast(msg) { toast.innerText = msg; toast.classList.remove('hidden'); setTimeout(() => toast.classList.add('hidden'), 2200); }
     function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
 })();
