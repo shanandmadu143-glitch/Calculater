@@ -10,6 +10,21 @@
     let currentLang = localStorage.getItem('wm_calc_lang') || 'si';
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'dark';
 
+    // Audio Control Variables
+    let audioCtx = null;
+    let isAudioPlaying = false;
+    let audioTimer = null;
+
+    const horrorNotes = [
+        130.81, // C3
+        138.59, // C#3
+        164.81, // E3
+        174.61, // F3
+        185.00, // F#3
+        220.00, // A3
+        233.08  // A#3
+    ];
+
     const translations = {
         si: {
             placeholderNote: "විස්තරය (උදා: බඩු ලැයිස්තුව)...",
@@ -17,6 +32,7 @@
             exportShare: "📥 Export / Share",
             settingsTitle: "⚙️ Settings",
             themeLabel: "Dark Mode",
+            audioLabel: "Background Music 🎵",
             langLabel: "භාෂාව (Language)",
             close: "වහන්න",
             closeGeneral: "Close",
@@ -35,6 +51,7 @@
             exportShare: "📥 Export / Share",
             settingsTitle: "⚙️ Settings",
             themeLabel: "Dark Mode",
+            audioLabel: "Background Music 🎵",
             langLabel: "Language",
             close: "Close",
             closeGeneral: "Close",
@@ -53,13 +70,14 @@
             exportShare: "📥 ஏற்றுமதி / பகிரவும்",
             settingsTitle: "⚙️ அமைப்புகள்",
             themeLabel: "Dark Mode",
+            audioLabel: "பின்னணி இசை 🎵",
             langLabel: "மொழி (Language)",
             close: "மூடு",
             closeGeneral: "மூடு",
             clearAll: "அனைத்தையும் நீக்கு",
             savedHistoryTitle: "சேமிக்கப்பட்ட வரலாறு",
             editRecordTitle: "பதிவை திருத்து",
-            exportTitle: "ஏற்றுமதி లేదా பகிரவும்",
+            exportTitle: "ஏற்றுமதி அல்லது பகிரவும்",
             saveBtnText: "சேமிக்கவும்",
             cancelBtnText: "ரத்து செய்",
             downloadText: "பதிவிறக்க",
@@ -95,15 +113,84 @@
         applyLanguage(currentLang);
     }
 
+    /* ==================== AUDIO SYNTHESIZER ==================== */
+    function initAudioContext() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playHorrorNote() {
+        if (!isAudioPlaying || !audioCtx) return;
+
+        const freq = horrorNotes[Math.floor(Math.random() * horrorNotes.length)];
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = Math.random() > 0.5 ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        osc.frequency.exponentialRampToValueAtTime(
+            freq * (Math.random() > 0.5 ? 1.05 : 0.95), 
+            audioCtx.currentTime + 2.5
+        );
+
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.8);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 3.0);
+
+        const nextInterval = Math.random() * 1500 + 1000;
+        audioTimer = setTimeout(playHorrorNote, nextInterval);
+    }
+
+    function startHorrorMusic() {
+        initAudioContext();
+        if (!isAudioPlaying) {
+            isAudioPlaying = true;
+            playHorrorNote();
+        }
+    }
+
+    function stopHorrorMusic() {
+        isAudioPlaying = false;
+        if (audioTimer) {
+            clearTimeout(audioTimer);
+            audioTimer = null;
+        }
+    }
+
     function setupSettings() {
         const settingsBtn = document.getElementById('settings-btn');
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const closeSettingsX = document.getElementById('close-settings-x');
         const themeToggle = document.getElementById('theme-toggle');
         const langSelect = document.getElementById('language-select');
+        const audioToggle = document.getElementById('audio-toggle');
 
         if (themeToggle) themeToggle.checked = currentTheme === 'dark';
         if (langSelect) langSelect.value = currentLang;
+
+        const savedAudioState = localStorage.getItem('wm_calc_audio') === 'true';
+        if (audioToggle) {
+            audioToggle.checked = savedAudioState;
+            if (savedAudioState) {
+                const autoStartHandler = () => {
+                    if (audioToggle.checked) startHorrorMusic();
+                    document.removeEventListener('click', autoStartHandler);
+                };
+                document.addEventListener('click', autoStartHandler);
+            }
+        }
 
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
@@ -119,6 +206,18 @@
             themeToggle.addEventListener('change', (e) => {
                 const selectedTheme = e.target.checked ? 'dark' : 'light';
                 applyTheme(selectedTheme);
+            });
+        }
+
+        if (audioToggle) {
+            audioToggle.addEventListener('change', (e) => {
+                const enabled = e.target.checked;
+                localStorage.setItem('wm_calc_audio', enabled);
+                if (enabled) {
+                    startHorrorMusic();
+                } else {
+                    stopHorrorMusic();
+                }
             });
         }
 
@@ -157,6 +256,9 @@
 
         const thmLbl = document.getElementById('txt-theme-label');
         if (thmLbl) thmLbl.innerText = t.themeLabel;
+
+        const audLbl = document.getElementById('txt-audio-label');
+        if (audLbl) audLbl.innerText = t.audioLabel;
 
         const lngLbl = document.getElementById('txt-lang-label');
         if (lngLbl) lngLbl.innerText = t.langLabel;
