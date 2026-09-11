@@ -2,6 +2,7 @@
     'use strict';
 
     let display, calcNote, toast, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
+    let bgAudio = null;
     let savedRecords = [];
     let editingRecordId = null;
 
@@ -9,21 +10,6 @@
 
     let currentLang = localStorage.getItem('wm_calc_lang') || 'si';
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'dark';
-
-    // Audio Control Variables
-    let audioCtx = null;
-    let isAudioPlaying = false;
-    let audioTimer = null;
-
-    const horrorNotes = [
-        130.81, // C3
-        138.59, // C#3
-        164.81, // E3
-        174.61, // F3
-        185.00, // F#3
-        220.00, // A3
-        233.08  // A#3
-    ];
 
     const translations = {
         si: {
@@ -97,6 +83,7 @@
         settingsModal = document.getElementById('settings-modal');
         savedList = document.getElementById('saved-list');
         suggestionsBox = document.getElementById('custom-suggestions');
+        bgAudio = document.getElementById('bg-audio');
 
         try {
             savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -112,13 +99,11 @@
         applyTheme(currentTheme);
         applyLanguage(currentLang);
 
-        // Global User Interaction Listener to Unlock Audio Context
+        // Auto play audio upon user interaction (due to browser autoplay policies)
         const unlockAudio = () => {
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            if (localStorage.getItem('wm_calc_audio') === 'true' && !isAudioPlaying) {
-                startHorrorMusic();
+            const isAudioEnabled = localStorage.getItem('wm_calc_audio') !== 'false';
+            if (isAudioEnabled && bgAudio) {
+                bgAudio.play().catch(() => {});
             }
             document.removeEventListener('click', unlockAudio);
             document.removeEventListener('keydown', unlockAudio);
@@ -128,72 +113,6 @@
         document.addEventListener('click', unlockAudio);
         document.addEventListener('keydown', unlockAudio);
         document.addEventListener('touchstart', unlockAudio);
-    }
-
-    /* ==================== AUDIO SYNTHESIZER ==================== */
-    function initAudioContext() {
-        if (!audioCtx) {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioContextClass) {
-                audioCtx = new AudioContextClass();
-            }
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
-
-    function playHorrorNote() {
-        if (!isAudioPlaying) return;
-
-        initAudioContext();
-        if (!audioCtx) return;
-
-        const freq = horrorNotes[Math.floor(Math.random() * horrorNotes.length)];
-        
-        try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-
-            osc.type = Math.random() > 0.5 ? 'sawtooth' : 'triangle';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-            osc.frequency.exponentialRampToValueAtTime(
-                freq * (Math.random() > 0.5 ? 1.05 : 0.95), 
-                audioCtx.currentTime + 2.5
-            );
-
-            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.5);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0);
-
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            osc.start();
-            osc.stop(audioCtx.currentTime + 3.0);
-        } catch (e) {
-            console.error('Audio playback error:', e);
-        }
-
-        const nextInterval = Math.random() * 1200 + 800;
-        audioTimer = setTimeout(playHorrorNote, nextInterval);
-    }
-
-    function startHorrorMusic() {
-        initAudioContext();
-        if (!isAudioPlaying) {
-            isAudioPlaying = true;
-            playHorrorNote();
-        }
-    }
-
-    function stopHorrorMusic() {
-        isAudioPlaying = false;
-        if (audioTimer) {
-            clearTimeout(audioTimer);
-            audioTimer = null;
-        }
     }
 
     function setupSettings() {
@@ -207,9 +126,9 @@
         if (themeToggle) themeToggle.checked = currentTheme === 'dark';
         if (langSelect) langSelect.value = currentLang;
 
-        const savedAudioState = localStorage.getItem('wm_calc_audio') === 'true';
+        const isAudioEnabled = localStorage.getItem('wm_calc_audio') !== 'false';
         if (audioToggle) {
-            audioToggle.checked = savedAudioState;
+            audioToggle.checked = isAudioEnabled;
         }
 
         if (settingsBtn) {
@@ -234,9 +153,9 @@
                 const enabled = e.target.checked;
                 localStorage.setItem('wm_calc_audio', enabled);
                 if (enabled) {
-                    startHorrorMusic();
+                    if (bgAudio) bgAudio.play().catch(() => {});
                 } else {
-                    stopHorrorMusic();
+                    if (bgAudio) bgAudio.pause();
                 }
             });
         }
