@@ -599,45 +599,70 @@
         document.getElementById('history-total-val').innerText = totalSum.toLocaleString('en-US', { minimumFractionDigits: 2 });
     }
 
+    /* Direction-aware Swipe Gesture Engine (Prevents Vertical Scroll Block) */
     function setupSwipeGesture(element, item) {
-        let startX = 0, currentX = 0, isSwiping = false;
+        let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
 
         const start = (e) => { 
             startX = e.touches ? e.touches[0].clientX : e.clientX; 
+            startY = e.touches ? e.touches[0].clientY : e.clientY;
             isSwiping = true; 
+            isScrolling = false;
             element.style.transition = 'none'; 
         };
+
         const move = (e) => {
             if (!isSwiping) return;
-            currentX = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
+            
+            let touchX = e.touches ? e.touches[0].clientX : e.clientX;
+            let touchY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            currentX = touchX - startX;
+            currentY = touchY - startY;
+
+            if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
+                isScrolling = true;
+                element.style.transform = 'translateX(0)';
+                return;
+            }
+
+            if (isScrolling) return;
+
             if (currentX > 100) currentX = 100;
             if (currentX < -100) currentX = -100;
             element.style.transform = `translateX(${currentX}px)`;
         };
+
         const end = () => {
             if (!isSwiping) return;
             isSwiping = false;
             element.style.transition = 'transform 0.2s';
-            if (currentX > 60) {
-                element.style.transform = 'translateX(0)';
-                editingRecordId = item.id;
-                document.getElementById('edit-note').value = item.note;
-                document.getElementById('edit-expression').value = item.expression;
-                editModal.classList.remove('hidden');
-            } else if (currentX < -60) {
-                element.style.transform = 'translateX(0)';
-                showConfirmDialog(
-                    'මකා දැමීම', 
-                    `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
-                    () => {
-                        savedRecords = savedRecords.filter(r => r.id !== item.id);
-                        saveToStorage(); 
-                        renderHistory();
-                        showToast('දත්තය මකා දමන ලදී!', 'info');
-                    }
-                );
-            } else element.style.transform = 'translateX(0)';
+
+            if (!isScrolling) {
+                if (currentX > 60) {
+                    element.style.transform = 'translateX(0)';
+                    editingRecordId = item.id;
+                    document.getElementById('edit-note').value = item.note;
+                    document.getElementById('edit-expression').value = item.expression;
+                    editModal.classList.remove('hidden');
+                } else if (currentX < -60) {
+                    element.style.transform = 'translateX(0)';
+                    showConfirmDialog(
+                        'මකා දැමීම', 
+                        `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
+                        () => {
+                            savedRecords = savedRecords.filter(r => r.id !== item.id);
+                            saveToStorage(); 
+                            renderHistory();
+                            showToast('දත්තය මකා දමන ලදී!', 'info');
+                        }
+                    );
+                } else {
+                    element.style.transform = 'translateX(0)';
+                }
+            }
             currentX = 0;
+            currentY = 0;
         };
 
         if ('ontouchstart' in window) {
