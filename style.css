@@ -287,13 +287,36 @@ body {
     outline: none;
 }
 
+/* Saved History Smooth Scrollable List */
 .saved-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-bottom: 14px;
-    max-height: 260px;
+    max-height: 320px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 6px;
+}
+
+/* Custom Scrollbar */
+.saved-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.saved-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.saved-list::-webkit-scrollbar-thumb {
+    background: #ff9800;
+    border-radius: 10px;
+}
+
+.saved-list::-webkit-scrollbar-thumb:hover {
+    background: #e65100;
 }
 
 .saved-item-wrapper {
@@ -507,10 +530,7 @@ input:checked + .slider:before { transform: translateX(22px); }
 .danger-btn { background: #d32f2f; color: white; border: none; border-radius: 8px; cursor: pointer; }
 .icon-only-sm { font-size: 15px; padding: 6px 12px; }
 
-/* =========================================================
-   Modern Glassmorphism Toast Popup Alert & Confirmation Dialog System
-   ========================================================= */
-
+/* Toast Popup & Alert Styling */
 .toast-container {
     position: fixed;
     top: 20px;
