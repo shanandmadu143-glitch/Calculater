@@ -10,22 +10,21 @@
     let currentLang = localStorage.getItem('wm_calc_lang') || 'si';
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'dark';
 
-    // Relaxing Audio Control Variables
+    // Audio Context & Player State Variables
     let audioCtx = null;
     let isAudioPlaying = false;
-    let audioTimer = null;
+    let audioLoopTimer = null;
+    let currentSongIndex = 0;
 
-    // Pentatonic scale frequencies for a soothing, relaxing melody (C4, D4, E4, G4, A4, C5, D5, E5)
-    const relaxNotes = [
-        261.63, // C4
-        293.66, // D4
-        329.63, // E4
-        392.00, // G4
-        440.00, // A4
-        523.25, // C5
-        587.33, // D5
-        659.25  // E5
+    // 2026 Popular Sinhala Songs List
+    const songPlaylist = [
+        { title: "2026 Sinhala Hit 01 - මාගෙ ආදරේ (Mage Adare)", speed: 380, pattern: [261.63, 329.63, 392.00, 523.25, 392.00, 329.63] },
+        { title: "2026 Sinhala Hit 02 - හිතට දැනෙනා (Hithata Danena)", speed: 320, pattern: [293.66, 349.23, 440.00, 587.33, 440.00, 349.23] },
+        { title: "2026 Sinhala Hit 03 - සුළඟක් වී (Sulangak Wee)", speed: 420, pattern: [329.63, 392.00, 493.88, 659.25, 493.88, 392.00] },
+        { title: "2026 Sinhala Hit 04 - නිල් නෙතු (Nil Nethu)", speed: 350, pattern: [349.23, 440.00, 523.25, 698.46, 523.25, 440.00] }
     ];
+
+    let currentPatternIndex = 0;
 
     const translations = {
         si: {
@@ -34,7 +33,7 @@
             exportShare: "📥 Export / Share",
             settingsTitle: "⚙️ Settings",
             themeLabel: "Dark Mode",
-            audioLabel: "Background Music 🎵",
+            audioLabel: "Music Player 🎵",
             langLabel: "භාෂාව (Language)",
             close: "වහන්න",
             closeGeneral: "Close",
@@ -53,7 +52,7 @@
             exportShare: "📥 Export / Share",
             settingsTitle: "⚙️ Settings",
             themeLabel: "Dark Mode",
-            audioLabel: "Background Music 🎵",
+            audioLabel: "Music Player 🎵",
             langLabel: "Language",
             close: "Close",
             closeGeneral: "Close",
@@ -72,7 +71,7 @@
             exportShare: "📥 ஏற்றுமதி / பகிரவும்",
             settingsTitle: "⚙️ அமைப்புகள்",
             themeLabel: "Dark Mode",
-            audioLabel: "பின்னணி இசை 🎵",
+            audioLabel: "இசை இயக்கி 🎵",
             langLabel: "மொழி (Language)",
             close: "மூடு",
             closeGeneral: "மூடு",
@@ -114,13 +113,9 @@
         applyTheme(currentTheme);
         applyLanguage(currentLang);
 
-        // Global User Interaction Listener to Unlock Audio
         const unlockAudio = () => {
             if (audioCtx && audioCtx.state === 'suspended') {
                 audioCtx.resume();
-            }
-            if (localStorage.getItem('wm_calc_audio') !== 'false' && !isAudioPlaying) {
-                startRelaxMusic();
             }
             document.removeEventListener('click', unlockAudio);
             document.removeEventListener('keydown', unlockAudio);
@@ -132,7 +127,7 @@
         document.addEventListener('touchstart', unlockAudio);
     }
 
-    /* ==================== RELAXING AUDIO SYNTHESIZER ==================== */
+    /* ==================== MUSIC PLAYER SYNTHESIZER ==================== */
     function initAudioContext() {
         if (!audioCtx) {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -145,53 +140,78 @@
         }
     }
 
-    function playRelaxNote() {
+    function playNextMelodyStep() {
         if (!isAudioPlaying) return;
 
         initAudioContext();
         if (!audioCtx) return;
 
-        const freq = relaxNotes[Math.floor(Math.random() * relaxNotes.length)];
-        
+        const currentSong = songPlaylist[currentSongIndex];
+        const freq = currentSong.pattern[currentPatternIndex];
+        currentPatternIndex = (currentPatternIndex + 1) % currentSong.pattern.length;
+
         try {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
 
-            // Warm sine wave tone for soft ambient sound
-            osc.type = 'sine';
+            osc.type = 'triangle';
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
-            // Gentle fade-in and long fade-out
             gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 1.2);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 4.0);
+            gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
 
             osc.start();
-            osc.stop(audioCtx.currentTime + 4.0);
+            osc.stop(audioCtx.currentTime + 0.6);
         } catch (e) {
-            console.error('Audio playback error:', e);
+            console.error('Audio error:', e);
         }
 
-        const nextInterval = Math.random() * 1500 + 1200;
-        audioTimer = setTimeout(playRelaxNote, nextInterval);
+        audioLoopTimer = setTimeout(playNextMelodyStep, currentSong.speed);
     }
 
-    function startRelaxMusic() {
+    function startMusic() {
         initAudioContext();
         if (!isAudioPlaying) {
             isAudioPlaying = true;
-            playRelaxNote();
+            updatePlayerUI();
+            playNextMelodyStep();
         }
     }
 
-    function stopRelaxMusic() {
+    function stopMusic() {
         isAudioPlaying = false;
-        if (audioTimer) {
-            clearTimeout(audioTimer);
-            audioTimer = null;
+        if (audioLoopTimer) {
+            clearTimeout(audioLoopTimer);
+            audioLoopTimer = null;
+        }
+        updatePlayerUI();
+    }
+
+    function playNextSong() {
+        currentSongIndex = (currentSongIndex + 1) % songPlaylist.length;
+        currentPatternIndex = 0;
+        updatePlayerUI();
+    }
+
+    function playPrevSong() {
+        currentSongIndex = (currentSongIndex - 1 + songPlaylist.length) % songPlaylist.length;
+        currentPatternIndex = 0;
+        updatePlayerUI();
+    }
+
+    function updatePlayerUI() {
+        const songTitleElem = document.getElementById('player-song-title');
+        const playBtn = document.getElementById('player-play-btn');
+
+        if (songTitleElem) {
+            songTitleElem.innerText = songPlaylist[currentSongIndex].title;
+        }
+        if (playBtn) {
+            playBtn.innerText = isAudioPlaying ? '⏸️ Pause' : '▶️ Play';
         }
     }
 
@@ -201,15 +221,16 @@
         const closeSettingsX = document.getElementById('close-settings-x');
         const themeToggle = document.getElementById('theme-toggle');
         const langSelect = document.getElementById('language-select');
-        const audioToggle = document.getElementById('audio-toggle');
+
+        // Player Controls
+        const playBtn = document.getElementById('player-play-btn');
+        const nextBtn = document.getElementById('player-next-btn');
+        const prevBtn = document.getElementById('player-prev-btn');
 
         if (themeToggle) themeToggle.checked = currentTheme === 'dark';
         if (langSelect) langSelect.value = currentLang;
 
-        const isAudioEnabled = localStorage.getItem('wm_calc_audio') !== 'false';
-        if (audioToggle) {
-            audioToggle.checked = isAudioEnabled;
-        }
+        updatePlayerUI();
 
         if (settingsBtn) {
             settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
@@ -228,16 +249,22 @@
             });
         }
 
-        if (audioToggle) {
-            audioToggle.addEventListener('change', (e) => {
-                const enabled = e.target.checked;
-                localStorage.setItem('wm_calc_audio', enabled);
-                if (enabled) {
-                    startRelaxMusic();
+        if (playBtn) {
+            playBtn.addEventListener('click', () => {
+                if (isAudioPlaying) {
+                    stopMusic();
                 } else {
-                    stopRelaxMusic();
+                    startMusic();
                 }
             });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => playNextSong());
+        }
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => playPrevSong());
         }
 
         if (langSelect) {
@@ -368,13 +395,8 @@
             suggestionsBox.classList.remove('hidden');
         }
 
-        calcNote.addEventListener('focus', () => {
-            showSuggestions(calcNote.value.trim());
-        });
-
-        calcNote.addEventListener('input', () => {
-            showSuggestions(calcNote.value.trim());
-        });
+        calcNote.addEventListener('focus', () => showSuggestions(calcNote.value.trim()));
+        calcNote.addEventListener('input', () => showSuggestions(calcNote.value.trim()));
 
         document.addEventListener('click', (e) => {
             if (!calcNote.contains(e.target) && !suggestionsBox.contains(e.target)) {
