@@ -50,6 +50,7 @@
             <button type="button" data-val="-" class="btn-operator">-</button>
 
             <button type="button" data-val="4">4</button>
+
             <button type="button" data-val="5">5</button>
             <button type="button" data-val="6">6</button>
             <button type="button" data-val="+" class="btn-operator">+</button>
@@ -70,6 +71,11 @@
         </div>
     </div>
 
+    <!-- Hidden Audio Element for Background Music -->
+    <audio id="bg-audio" loop preload="auto">
+        <source src="bg-music.mp3" type="audio/mpeg">
+    </audio>
+
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
@@ -88,7 +94,7 @@
             <div class="setting-row">
                 <label id="txt-audio-label" for="audio-toggle">Background Music 🎵</label>
                 <label class="switch">
-                    <input type="checkbox" id="audio-toggle">
+                    <input type="checkbox" id="audio-toggle" checked>
                     <span class="slider round"></span>
                 </label>
             </div>
