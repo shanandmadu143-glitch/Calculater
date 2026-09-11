@@ -2,7 +2,6 @@
     'use strict';
 
     let display, calcNote, toast, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
-    let bgAudio = null;
     let savedRecords = [];
     let editingRecordId = null;
 
@@ -10,6 +9,23 @@
 
     let currentLang = localStorage.getItem('wm_calc_lang') || 'si';
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'dark';
+
+    // Relaxing Audio Control Variables
+    let audioCtx = null;
+    let isAudioPlaying = false;
+    let audioTimer = null;
+
+    // Pentatonic scale frequencies for a soothing, relaxing melody (C4, D4, E4, G4, A4, C5, D5, E5)
+    const relaxNotes = [
+        261.63, // C4
+        293.66, // D4
+        329.63, // E4
+        392.00, // G4
+        440.00, // A4
+        523.25, // C5
+        587.33, // D5
+        659.25  // E5
+    ];
 
     const translations = {
         si: {
@@ -83,7 +99,6 @@
         settingsModal = document.getElementById('settings-modal');
         savedList = document.getElementById('saved-list');
         suggestionsBox = document.getElementById('custom-suggestions');
-        bgAudio = document.getElementById('bg-audio');
 
         try {
             savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -99,11 +114,13 @@
         applyTheme(currentTheme);
         applyLanguage(currentLang);
 
-        // Auto play audio upon user interaction (due to browser autoplay policies)
+        // Global User Interaction Listener to Unlock Audio
         const unlockAudio = () => {
-            const isAudioEnabled = localStorage.getItem('wm_calc_audio') !== 'false';
-            if (isAudioEnabled && bgAudio) {
-                bgAudio.play().catch(() => {});
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            if (localStorage.getItem('wm_calc_audio') !== 'false' && !isAudioPlaying) {
+                startRelaxMusic();
             }
             document.removeEventListener('click', unlockAudio);
             document.removeEventListener('keydown', unlockAudio);
@@ -113,6 +130,69 @@
         document.addEventListener('click', unlockAudio);
         document.addEventListener('keydown', unlockAudio);
         document.addEventListener('touchstart', unlockAudio);
+    }
+
+    /* ==================== RELAXING AUDIO SYNTHESIZER ==================== */
+    function initAudioContext() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                audioCtx = new AudioContextClass();
+            }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playRelaxNote() {
+        if (!isAudioPlaying) return;
+
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const freq = relaxNotes[Math.floor(Math.random() * relaxNotes.length)];
+        
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            // Warm sine wave tone for soft ambient sound
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            // Gentle fade-in and long fade-out
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 1.2);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 4.0);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 4.0);
+        } catch (e) {
+            console.error('Audio playback error:', e);
+        }
+
+        const nextInterval = Math.random() * 1500 + 1200;
+        audioTimer = setTimeout(playRelaxNote, nextInterval);
+    }
+
+    function startRelaxMusic() {
+        initAudioContext();
+        if (!isAudioPlaying) {
+            isAudioPlaying = true;
+            playRelaxNote();
+        }
+    }
+
+    function stopRelaxMusic() {
+        isAudioPlaying = false;
+        if (audioTimer) {
+            clearTimeout(audioTimer);
+            audioTimer = null;
+        }
     }
 
     function setupSettings() {
@@ -153,9 +233,9 @@
                 const enabled = e.target.checked;
                 localStorage.setItem('wm_calc_audio', enabled);
                 if (enabled) {
-                    if (bgAudio) bgAudio.play().catch(() => {});
+                    startRelaxMusic();
                 } else {
-                    if (bgAudio) bgAudio.pause();
+                    stopRelaxMusic();
                 }
             });
         }
