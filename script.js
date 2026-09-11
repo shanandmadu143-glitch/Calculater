@@ -1,11 +1,71 @@
 (function () {
     'use strict';
 
-    let display, calcNote, toast, savedModal, editModal, downloadModal, savedList, suggestionsBox;
+    let display, calcNote, toast, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
     let savedRecords = [];
     let editingRecordId = null;
 
     const STORAGE_KEY = 'wm_calculator_records_v1';
+
+    let currentLang = localStorage.getItem('wm_calc_lang') || 'si';
+    let currentTheme = localStorage.getItem('wm_calc_theme') || 'dark';
+
+    const translations = {
+        si: {
+            placeholderNote: "විස්තරය (උදා: බඩු ලැයිස්තුව)...",
+            viewHistory: "📜 Saved History බලන්න",
+            exportShare: "📥 Export / Share",
+            settingsTitle: "⚙️ Settings",
+            themeLabel: "Dark Mode",
+            langLabel: "භාෂාව (Language)",
+            close: "වහන්න",
+            closeGeneral: "Close",
+            clearAll: "සියලුම History මකා දමන්න",
+            savedHistoryTitle: "Saved Calculations History",
+            editRecordTitle: "සංස්කරණය කරන්න",
+            exportTitle: "Export / Share කරන්න",
+            saveBtnText: "Save Changes",
+            cancelBtnText: "Cancel",
+            downloadText: "Download",
+            shareText: "🔗 Share File"
+        },
+        en: {
+            placeholderNote: "Note (e.g. Grocery List)...",
+            viewHistory: "📜 View Saved History",
+            exportShare: "📥 Export / Share",
+            settingsTitle: "⚙️ Settings",
+            themeLabel: "Dark Mode",
+            langLabel: "Language",
+            close: "Close",
+            closeGeneral: "Close",
+            clearAll: "Clear All History",
+            savedHistoryTitle: "Saved Calculations History",
+            editRecordTitle: "Edit Record",
+            exportTitle: "Export or Share History",
+            saveBtnText: "Save Changes",
+            cancelBtnText: "Cancel",
+            downloadText: "Download",
+            shareText: "🔗 Share File"
+        },
+        ta: {
+            placeholderNote: "விவரம் (எ.கா. பொருள் பட்டியல்)...",
+            viewHistory: "📜 வரலாற்றைப் பார்க்கவும்",
+            exportShare: "📥 ஏற்றுமதி / பகிரவும்",
+            settingsTitle: "⚙️ அமைப்புகள்",
+            themeLabel: "Dark Mode",
+            langLabel: "மொழி (Language)",
+            close: "மூடு",
+            closeGeneral: "மூடு",
+            clearAll: "அனைத்தையும் நீக்கு",
+            savedHistoryTitle: "சேமிக்கப்பட்ட வரலாறு",
+            editRecordTitle: "பதிவை திருத்து",
+            exportTitle: "ஏற்றுமதி లేదా பகிரவும்",
+            saveBtnText: "சேமிக்கவும்",
+            cancelBtnText: "ரத்து செய்",
+            downloadText: "பதிவிறக்க",
+            shareText: "🔗 பகிரவும்"
+        }
+    };
 
     document.addEventListener('DOMContentLoaded', initApp);
 
@@ -16,6 +76,7 @@
         savedModal = document.getElementById('saved-modal');
         editModal = document.getElementById('edit-modal');
         downloadModal = document.getElementById('download-modal');
+        settingsModal = document.getElementById('settings-modal');
         savedList = document.getElementById('saved-list');
         suggestionsBox = document.getElementById('custom-suggestions');
 
@@ -29,6 +90,109 @@
         setInterval(updateClock, 1000);
         bindEvents();
         setupSearchableSuggestions();
+        setupSettings();
+        applyTheme(currentTheme);
+        applyLanguage(currentLang);
+    }
+
+    function setupSettings() {
+        const settingsBtn = document.getElementById('settings-btn');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const closeSettingsX = document.getElementById('close-settings-x');
+        const themeToggle = document.getElementById('theme-toggle');
+        const langSelect = document.getElementById('language-select');
+
+        if (themeToggle) themeToggle.checked = currentTheme === 'dark';
+        if (langSelect) langSelect.value = currentLang;
+
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+        }
+        if (closeSettingsBtn) {
+            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+        }
+        if (closeSettingsX) {
+            closeSettingsX.addEventListener('click', () => settingsModal.classList.add('hidden'));
+        }
+
+        if (themeToggle) {
+            themeToggle.addEventListener('change', (e) => {
+                const selectedTheme = e.target.checked ? 'dark' : 'light';
+                applyTheme(selectedTheme);
+            });
+        }
+
+        if (langSelect) {
+            langSelect.addEventListener('change', (e) => {
+                applyLanguage(e.target.value);
+            });
+        }
+    }
+
+    function applyTheme(theme) {
+        currentTheme = theme;
+        localStorage.setItem('wm_calc_theme', theme);
+        if (theme === 'light') {
+            document.body.classList.add('light-theme');
+        } else {
+            document.body.classList.remove('light-theme');
+        }
+    }
+
+    function applyLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('wm_calc_lang', lang);
+        const t = translations[lang] || translations.si;
+
+        if (calcNote) calcNote.placeholder = t.placeholderNote;
+
+        const viewBtn = document.getElementById('view-btn');
+        if (viewBtn) viewBtn.innerText = t.viewHistory;
+
+        const downloadBtn = document.getElementById('download-btn');
+        if (downloadBtn) downloadBtn.innerText = t.exportShare;
+
+        const setHead = document.getElementById('txt-settings-title');
+        if (setHead) setHead.innerText = t.settingsTitle;
+
+        const thmLbl = document.getElementById('txt-theme-label');
+        if (thmLbl) thmLbl.innerText = t.themeLabel;
+
+        const lngLbl = document.getElementById('txt-lang-label');
+        if (lngLbl) lngLbl.innerText = t.langLabel;
+
+        const clsSet = document.getElementById('close-settings-btn');
+        if (clsSet) clsSet.innerText = t.close;
+
+        const clrAll = document.getElementById('clear-all-btn');
+        if (clrAll) clrAll.innerText = t.clearAll;
+
+        const clsMdl = document.getElementById('close-modal-btn');
+        if (clsMdl) clsMdl.innerText = t.closeGeneral;
+
+        const svdHead = document.getElementById('txt-saved-title');
+        if (svdHead) svdHead.innerText = t.savedHistoryTitle;
+
+        const edtHead = document.getElementById('txt-edit-title');
+        if (edtHead) edtHead.innerText = t.editRecordTitle;
+
+        const expHead = document.getElementById('txt-export-title');
+        if (expHead) expHead.innerText = t.exportTitle;
+
+        const svEdt = document.getElementById('save-edit-btn');
+        if (svEdt) svEdt.innerText = t.saveBtnText;
+
+        const cnlEdt = document.getElementById('cancel-edit-btn');
+        if (cnlEdt) cnlEdt.innerText = t.cancelBtnText;
+
+        const cnlDwn = document.getElementById('cancel-download-btn');
+        if (cnlDwn) cnlDwn.innerText = t.cancelBtnText;
+
+        const dwnTxt = document.getElementById('download-btn-text');
+        if (dwnTxt) dwnTxt.innerText = t.downloadText;
+
+        const shrTxt = document.getElementById('share-btn-text');
+        if (shrTxt) shrTxt.innerText = t.shareText;
     }
 
     function updateClock() {
@@ -39,10 +203,8 @@
         
         const d = document.getElementById('current-date');
         const t = document.getElementById('current-time');
-        if (d && t) {
-            d.innerText = `${year}-${month}-${day}`;
-            t.innerText = now.toLocaleTimeString();
-        }
+        if (d) d.innerText = `${year}-${month}-${day}`;
+        if (t) t.innerText = now.toLocaleTimeString();
     }
 
     function getCurrentDateFormatted() {
@@ -477,7 +639,8 @@
         } finally {
             confirmBtn.disabled = false;
             spinner.classList.add('hidden');
-            btnText.innerText = isShare ? '🔗 Share File' : 'Download';
+            const t = translations[currentLang] || translations.si;
+            btnText.innerText = isShare ? t.shareText : t.downloadText;
         }
     }
 
