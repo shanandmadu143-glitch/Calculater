@@ -13,6 +13,7 @@ body {
     align-items: center;
     min-height: 100vh;
     padding: 20px;
+    transition: background 0.3s, color 0.3s;
 }
 
 .calculator-card {
@@ -25,6 +26,7 @@ body {
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 140, 0, 0.05);
     backdrop-filter: blur(10px);
     animation: fadeIn 0.4s ease-out;
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 @keyframes fadeIn {
@@ -40,6 +42,30 @@ body {
     color: #9a90b8;
     margin-bottom: 14px;
     font-weight: 500;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: none;
+    height: auto;
+    width: auto;
+    padding: 2px 4px;
+    border-radius: 6px;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(30deg);
 }
 
 .app-title {
@@ -68,7 +94,7 @@ body {
     padding: 10px 16px;
     outline: none;
     box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
-    transition: border-color 0.3s, box-shadow 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s, color 0.3s;
 }
 
 #display:focus {
@@ -98,7 +124,7 @@ body {
     color: #fff;
     font-size: 13px;
     outline: none;
-    transition: border-color 0.25s, box-shadow 0.25s;
+    transition: border-color 0.25s, box-shadow 0.25s, background 0.3s, color 0.3s;
 }
 
 .input-wrapper input:focus {
@@ -332,6 +358,7 @@ button:active {
     position: relative;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7);
     animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: background 0.3s, border-color 0.3s;
 }
 
 @keyframes popIn {
@@ -354,7 +381,7 @@ button:active {
     background: #0f0c1b;
     color: #fff;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.3s, color 0.3s;
 }
 
 .modal-content input:focus, .modal-content select:focus {
@@ -407,6 +434,151 @@ button:active {
     color: #ffffff;
     background: transparent;
     transform: none;
+}
+
+/* Setting Rows */
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.setting-row.vertical-setting {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+/* Toggle Switch Styling */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #443c5a;
+    transition: .3s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+}
+
+input:checked + .slider {
+    background-color: #ff8c00;
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
+
+.slider.round {
+    border-radius: 24px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Light Theme Styles */
+body.light-theme {
+    background: linear-gradient(135deg, #e0e5ec 0%, #c2cedc 100%);
+    color: #222;
+}
+
+body.light-theme .calculator-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme #display {
+    background: #eef2f5;
+    border-color: #ccc;
+    color: #00796b;
+}
+
+body.light-theme .input-wrapper input {
+    background: #ffffff;
+    border-color: #ccc;
+    color: #333;
+}
+
+body.light-theme button {
+    background: #e4e8ee;
+    color: #222;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+body.light-theme button:hover {
+    background: #d5dbe3;
+}
+
+body.light-theme .btn-operator {
+    background: #d1c8f0;
+    color: #4a148c;
+}
+
+body.light-theme .btn-clear {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+body.light-theme .btn-action {
+    background: #e2d2e2;
+    color: #581845;
+}
+
+body.light-theme .btn-secondary {
+    background: #ffffff;
+    border-color: #ccc;
+    color: #333;
+}
+
+body.light-theme .modal-content {
+    background: #ffffff;
+    border-color: #ddd;
+    color: #222;
+}
+
+body.light-theme .modal-content input, 
+body.light-theme .modal-content select {
+    background: #f8f9fa;
+    border-color: #ccc;
+    color: #333;
+}
+
+body.light-theme .saved-item {
+    background: #f0f3f7;
+}
+
+body.light-theme .setting-row {
+    color: #333;
+}
+
+body.light-theme .calc-header {
+    color: #555;
 }
 
 /* History List Layout & Swipe Gesture Styling */
