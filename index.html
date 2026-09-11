@@ -11,9 +11,11 @@
     <div class="calculator-container">
         <!-- Header / Clock -->
         <div class="header">
-            <span id="current-date">YYYY-MM-DD</span>
-            <span id="current-time">00:00:00 AM</span>
-            <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+            <div class="time-info">
+                <span id="current-date">YYYY-MM-DD</span>
+                <span id="current-time">00:00:00 AM</span>
+            </div>
+            <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">⚙️</button>
         </div>
 
         <!-- Display Area -->
@@ -30,7 +32,7 @@
 
         <!-- Action Bar: Save Text + Icon-only Buttons -->
         <div class="action-bar-grid">
-            <button id="save-btn" class="action-btn save">💾 Save</button>
+            <button id="save-btn" class="action-btn save" title="දත්ත සුරකින්න">💾 Save</button>
             <button id="view-btn" class="action-btn view icon-only" title="History බලන්න">📜</button>
             <button id="download-btn" class="action-btn export icon-only" title="Export / Share">📥</button>
         </div>
@@ -98,9 +100,9 @@
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label>විස්තරය / Note:</label>
+                <label for="edit-note">විස්තරය / Note:</label>
                 <input type="text" id="edit-note">
-                <label>අගය / Value:</label>
+                <label for="edit-expression">අගය / Value:</label>
                 <input type="text" id="edit-expression">
                 <div class="modal-actions icon-actions">
                     <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾</button>
@@ -110,17 +112,17 @@
         </div>
     </div>
 
-    <!-- Export Modal -->
+    <!-- Export / Share Modal -->
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-export-title">Export / Share</h3>
+                <h3 id="txt-export-title">Export & Share</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
-                <label>File Name:</label>
+                <label for="export-filename">File Name:</label>
                 <input type="text" id="export-filename" placeholder="Enter file name...">
-                <label>Format:</label>
+                <label for="export-format">Format:</label>
                 <select id="export-format">
                     <option value="pdf">PDF Document (.pdf)</option>
                     <option value="word">Word Document (.doc)</option>
@@ -128,12 +130,8 @@
                     <option value="html">HTML Webpage (.html)</option>
                 </select>
                 <div class="modal-actions icon-actions">
-                    <button id="confirm-download-btn" class="action-btn export icon-only" title="Download">
-                        <span id="download-btn-text">⬇️</span>
-                    </button>
-                    <button id="confirm-share-btn" class="action-btn share icon-only" title="Share File">
-                        <span id="share-btn-text">🔗</span>
-                    </button>
+                    <button id="confirm-download-btn" class="action-btn export" title="Download File">⬇️ Download</button>
+                    <button id="confirm-share-btn" class="action-btn share" title="Share Document">🔗 Share</button>
                     <button id="cancel-download-btn" class="action-btn cancel icon-only" title="Cancel">✖️</button>
                 </div>
             </div>
@@ -179,9 +177,9 @@
                         </div>
 
                         <div class="player-controls">
-                            <button id="player-prev-btn" class="player-btn">⏮️</button>
-                            <button id="player-play-btn" class="player-btn play-btn">▶️</button>
-                            <button id="player-next-btn" class="player-btn">⏭️</button>
+                            <button id="player-prev-btn" class="player-btn" title="Previous Track">⏮️</button>
+                            <button id="player-play-btn" class="player-btn play-btn" title="Play/Pause">▶️</button>
+                            <button id="player-next-btn" class="player-btn" title="Next Track">⏭️</button>
                         </div>
 
                         <div class="volume-box">
