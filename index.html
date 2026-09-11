@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WM Calculator</title>
+    <title>WM Calculator Pro</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body>
+<body class="theme-dark">
     <div class="calculator-container">
         <!-- Header / Clock -->
         <div class="header">
@@ -18,19 +18,28 @@
 
         <!-- Display Area -->
         <div class="display-container">
+            <div id="live-preview" class="live-preview"></div>
             <input type="text" id="display" readonly placeholder="0">
         </div>
 
-        <!-- Note Input with Suggestions -->
+        <!-- Note Input & Category Selection -->
         <div class="input-container">
-            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." autocomplete="off">
+            <div class="input-row">
+                <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." autocomplete="off">
+                <select id="calc-category" class="category-select">
+                    <option value="General">🏷️ සාමාන්‍ය</option>
+                    <option value="Groceries">🛒 බඩු ලැයිස්තුව</option>
+                    <option value="Bills">🧾 බිල්පත්</option>
+                    <option value="Travel">🚌 ගමන් වියදම්</option>
+                </select>
+            </div>
             <div id="custom-suggestions" class="suggestions-box hidden"></div>
         </div>
 
         <!-- Action Buttons -->
         <div class="action-bar">
             <button id="save-btn" class="action-btn save">💾 Save</button>
-            <button id="view-btn" class="action-btn view">📜 Saved History බලන්න</button>
+            <button id="view-btn" class="action-btn view">📜 History බලන්න</button>
             <button id="download-btn" class="action-btn export">📥 Export / Share</button>
         </div>
 
@@ -68,11 +77,31 @@
     <div id="saved-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-saved-title">Saved Calculations History</h3>
-                <button id="clear-all-btn" class="danger-btn">සියලුම History මකා දමන්න</button>
+                <h3 id="txt-saved-title">Saved History</h3>
+                <button id="clear-all-btn" class="danger-btn">සියල්ල මකන්න</button>
             </div>
+
+            <!-- Search & Filter Controls -->
+            <div class="history-controls">
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
+                <select id="history-filter-cat">
+                    <option value="ALL">සියලු Categories</option>
+                    <option value="General">🏷️ සාමාන්‍ය</option>
+                    <option value="Groceries">🛒 බඩු ලැයිස්තුව</option>
+                    <option value="Bills">🧾 බිල්පත්</option>
+                    <option value="Travel">🚌 ගමන් වියදම්</option>
+                </select>
+            </div>
+
             <div id="saved-list" class="saved-list"></div>
-            <button id="close-modal-btn" class="close-btn">Close</button>
+
+            <!-- History Total Calculation Display -->
+            <div class="history-total-box">
+                <span>මුළු එකතුව (Total):</span>
+                <span id="history-total-val">0.00</span>
+            </div>
+
+            <button id="close-modal-btn" class="close-btn margin-top-10">Close</button>
         </div>
     </div>
 
@@ -86,6 +115,13 @@
             <div class="edit-form">
                 <label>විස්තරය / Note:</label>
                 <input type="text" id="edit-note">
+                <label>Category:</label>
+                <select id="edit-category">
+                    <option value="General">🏷️ සාමාන්‍ය</option>
+                    <option value="Groceries">🛒 බඩු ලැයිස්තුව</option>
+                    <option value="Bills">🧾 බිල්පත්</option>
+                    <option value="Travel">🚌 ගමන් වියදම්</option>
+                </select>
                 <label>අගය / Value:</label>
                 <input type="text" id="edit-expression">
                 <div class="modal-actions">
@@ -96,7 +132,7 @@
         </div>
     </div>
 
-    <!-- Download/Export Modal -->
+    <!-- Export Modal -->
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -136,31 +172,66 @@
                 <span id="close-settings-x" class="close-x">&times;</span>
             </div>
             <div class="settings-body">
+                <!-- Color Theme Selector -->
                 <div class="setting-item">
-                    <span id="txt-theme-label">Dark Mode</span>
+                    <span>Theme</span>
+                    <select id="theme-select">
+                        <option value="theme-dark">🌙 Dark Mode</option>
+                        <option value="theme-light">☀️ Light Mode</option>
+                        <option value="theme-neon">⚡ Neon Cyber</option>
+                        <option value="theme-emerald">🌿 Emerald Green</option>
+                    </select>
+                </div>
+
+                <!-- Sound & Haptic Feedback -->
+                <div class="setting-item">
+                    <span>Button Sound / Feedback</span>
                     <label class="switch">
-                        <input type="checkbox" id="theme-toggle" checked>
+                        <input type="checkbox" id="sound-toggle" checked>
                         <span class="slider round"></span>
                     </label>
                 </div>
 
-                <!-- Music Player Component -->
+                <!-- Music Player Component with Visualizer & Volume -->
                 <div class="setting-item flex-col align-start">
                     <span id="txt-audio-label">Music Player 🎵</span>
                     <div class="music-player-box">
-                        <div id="player-song-title" class="song-title">
-                            2026 Sinhala Hit 01 - මාගෙ ආදරේ (Mage Adare)
+                        <div id="player-song-title" class="song-title">2026 Sinhala Hit 01</div>
+                        
+                        <!-- Visualizer Bars -->
+                        <div id="audio-visualizer" class="visualizer-container">
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
                         </div>
+
                         <div class="player-controls">
-                            <button id="player-prev-btn" class="player-btn">⏮️ Prev</button>
+                            <button id="player-prev-btn" class="player-btn">⏮️</button>
                             <button id="player-play-btn" class="player-btn play-btn">▶️ Play</button>
-                            <button id="player-next-btn" class="player-btn">Next ⏭️</button>
+                            <button id="player-next-btn" class="player-btn">⏭️</button>
+                        </div>
+
+                        <div class="volume-box">
+                            <span>🔊</span>
+                            <input type="range" id="player-volume" min="0" max="1" step="0.05" value="0.5">
                         </div>
                     </div>
                 </div>
 
+                <!-- JSON Backup & Restore -->
+                <div class="setting-item flex-col align-start">
+                    <span>Data Backup & Sync</span>
+                    <div class="backup-actions">
+                        <button id="export-json-btn" class="btn-small">💾 Export Backup (JSON)</button>
+                        <button id="import-json-btn" class="btn-small">📂 Import Backup</button>
+                        <input type="file" id="import-file-input" accept=".json" class="hidden">
+                    </div>
+                </div>
+
                 <div class="setting-item">
-                    <span id="txt-lang-label">භාෂාව (Language)</span>
+                    <span id="txt-lang-label">Language</span>
                     <select id="language-select">
                         <option value="si">සිංහල (Sinhala)</option>
                         <option value="en">English</option>
