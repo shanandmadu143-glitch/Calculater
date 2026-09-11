@@ -3,6 +3,11 @@
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+input, select {
+    user-select: text;
 }
 
 /* Color Themes Definitions */
@@ -54,6 +59,7 @@ body {
     font-size: 13px;
     color: #888;
     height: 18px;
+    overflow: hidden;
 }
 
 .display-container input {
@@ -92,6 +98,7 @@ body {
     max-height: 120px;
     overflow-y: auto;
     z-index: 10;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 
 .suggestion-item { padding: 8px 12px; cursor: pointer; }
@@ -183,13 +190,13 @@ body {
 
 .saved-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 
-.saved-item-wrapper { position: relative; overflow: hidden; border-radius: 8px; }
+.saved-item-wrapper { position: relative; overflow: hidden; border-radius: 8px; touch-action: pan-y; }
 .swipe-background { position: absolute; top: 0; bottom: 0; width: 100%; display: flex; align-items: center; padding: 0 15px; font-weight: bold; color: white; }
 .swipe-bg-left { background: #1976d2; justify-content: flex-start; }
 .swipe-bg-right { background: #d32f2f; justify-content: flex-end; }
 
 .saved-item { position: relative; background: var(--btn-bg); padding: 10px 12px; z-index: 2; transition: transform 0.2s; border-radius: 8px; }
-.saved-item-title { font-weight: bold; color: #ff9800; font-size: 14px; }
+.saved-item-title { font-weight: bold; color: #ff9800; font-size: 14px; word-break: break-word; }
 .saved-item-result { font-size: 16px; font-weight: bold; margin-top: 4px; }
 
 .history-total-box {
