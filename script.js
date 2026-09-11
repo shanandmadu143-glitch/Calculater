@@ -54,7 +54,6 @@
         setupSettings();
         applyTheme(currentTheme);
 
-        // Sound Toggle init
         const sToggle = document.getElementById('sound-toggle');
         if (sToggle) sToggle.checked = soundEnabled;
     }
@@ -159,7 +158,7 @@
         const songTitleElem = document.getElementById('player-song-title');
         const playBtn = document.getElementById('player-play-btn');
         if (songTitleElem) songTitleElem.innerText = songPlaylist[currentSongIndex].title;
-        if (playBtn) playBtn.innerText = isAudioPlaying ? '⏸️ Pause' : '▶️ Play';
+        if (playBtn) playBtn.innerText = isAudioPlaying ? '⏸️' : '▶️';
     }
 
     function setupSettings() {
@@ -272,7 +271,6 @@
 
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
 
-        // History Search & Filter Events
         document.getElementById('history-search').addEventListener('input', renderHistory);
         document.getElementById('history-filter-cat').addEventListener('change', renderHistory);
 
