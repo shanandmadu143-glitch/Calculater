@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WM Calculator Pro</title>
     <link rel="stylesheet" href="style.css">
+    <!-- PDF Export Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="theme-dark">
+    <!-- Animated Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <div class="calculator-container">
-        <!-- Header / Clock -->
+        <!-- Header & Clock -->
         <div class="header">
             <div class="time-info">
                 <span id="current-date">YYYY-MM-DD</span>
@@ -18,7 +22,7 @@
             <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">⚙️</button>
         </div>
 
-        <!-- Display Area -->
+        <!-- Display Screen -->
         <div class="display-container">
             <div id="live-preview" class="live-preview"></div>
             <input type="text" id="display" readonly placeholder="0">
@@ -30,14 +34,14 @@
             <div id="custom-suggestions" class="suggestions-box hidden"></div>
         </div>
 
-        <!-- Action Bar: Save Text + Icon-only Buttons -->
+        <!-- Primary Action Buttons -->
         <div class="action-bar-grid">
             <button id="save-btn" class="action-btn save" title="දත්ත සුරකින්න">💾 Save</button>
             <button id="view-btn" class="action-btn view icon-only" title="History බලන්න">📜</button>
             <button id="download-btn" class="action-btn export icon-only" title="Export / Share">📥</button>
         </div>
 
-        <!-- Numpad Buttons -->
+        <!-- Keypad Grid -->
         <div class="buttons">
             <button data-action="clear" class="btn btn-cmd">C</button>
             <button data-action="delete" class="btn btn-cmd">⌫</button>
@@ -64,36 +68,34 @@
         </div>
     </div>
 
-    <!-- Saved History Modal -->
+    <!-- History Modal -->
     <div id="saved-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-saved-title">Saved History</h3>
+                <h3>Saved History</h3>
                 <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
             </div>
 
-            <!-- Search Control -->
             <div class="history-controls">
-                <input type="text" id="history-search" placeholder="🔍 සෙවුම...">
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
             </div>
 
             <div id="saved-list" class="saved-list"></div>
 
-            <!-- History Total Display -->
             <div class="history-total-box">
                 <span>මුළු එකතුව (Total):</span>
                 <span id="history-total-val">0.00</span>
             </div>
 
-            <button id="close-modal-btn" class="close-btn margin-top-10" title="Close">✖️</button>
+            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ Close</button>
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- Edit Record Modal -->
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-edit-title">සංස්කරණය</h3>
+                <h3>සංස්කරණය (Edit)</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
@@ -102,18 +104,18 @@
                 <label for="edit-expression">අගය / Value:</label>
                 <input type="text" id="edit-expression">
                 <div class="modal-actions icon-actions">
-                    <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️</button>
+                    <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾 Save</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️ Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Export / Share Modal -->
+    <!-- Export & Share Modal -->
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-export-title">Export & Share</h3>
+                <h3>Export & Share</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
@@ -127,9 +129,9 @@
                     <option value="html">HTML Webpage (.html)</option>
                 </select>
                 <div class="modal-actions icon-actions">
-                    <button id="confirm-download-btn" class="action-btn export" title="Download File">⬇️ Download</button>
-                    <button id="confirm-share-btn" class="action-btn share" title="Share Document">🔗 Share</button>
-                    <button id="cancel-download-btn" class="action-btn cancel icon-only" title="Cancel">✖️</button>
+                    <button id="confirm-download-btn" class="action-btn export">⬇️ Download</button>
+                    <button id="confirm-share-btn" class="action-btn share">🔗 Share</button>
+                    <button id="cancel-download-btn" class="action-btn cancel icon-only">✖️</button>
                 </div>
             </div>
         </div>
@@ -139,7 +141,7 @@
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="txt-settings-title">⚙️ Settings</h3>
+                <h3>⚙️ Settings</h3>
                 <span id="close-settings-x" class="close-x">&times;</span>
             </div>
             <div class="settings-body">
@@ -154,7 +156,7 @@
                 </div>
 
                 <div class="setting-item">
-                    <span>Button Sound / Feedback</span>
+                    <span>Key Sounds</span>
                     <label class="switch">
                         <input type="checkbox" id="sound-toggle" checked>
                         <span class="slider round"></span>
@@ -174,9 +176,9 @@
                         </div>
 
                         <div class="player-controls">
-                            <button id="player-prev-btn" class="player-btn" title="Previous Track">⏮️</button>
-                            <button id="player-play-btn" class="player-btn play-btn" title="Play/Pause">▶️</button>
-                            <button id="player-next-btn" class="player-btn" title="Next Track">⏭️</button>
+                            <button id="player-prev-btn" class="player-btn">⏮️</button>
+                            <button id="player-play-btn" class="player-btn play-btn">▶️</button>
+                            <button id="player-next-btn" class="player-btn">⏭️</button>
                         </div>
 
                         <div class="volume-box">
@@ -187,7 +189,7 @@
                 </div>
 
                 <div class="setting-item flex-col align-start">
-                    <span>Data Backup & Sync</span>
+                    <span>Data Backup & Restore</span>
                     <div class="backup-actions">
                         <button id="export-json-btn" class="btn-small">💾 Backup</button>
                         <button id="import-json-btn" class="btn-small">📂 Restore</button>
@@ -195,7 +197,7 @@
                     </div>
                 </div>
             </div>
-            <button id="close-settings-btn" class="close-btn margin-top-15" title="Close">✖️</button>
+            <button id="close-settings-btn" class="close-btn margin-top-15">✖️ Close</button>
         </div>
     </div>
 
