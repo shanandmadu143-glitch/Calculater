@@ -616,3 +616,4 @@ input:checked + .slider:before { transform: translateX(22px); }
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
     border: 1px solid #444444;
 }
+
