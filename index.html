@@ -22,21 +22,13 @@
             <input type="text" id="display" readonly placeholder="0">
         </div>
 
-        <!-- Note Input & Category Selection -->
+        <!-- Note Input Area -->
         <div class="input-container">
-            <div class="input-row">
-                <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." autocomplete="off">
-                <select id="calc-category" class="category-select">
-                    <option value="General">🏷️ සාමාන්‍ය</option>
-                    <option value="Groceries">🛒 බඩු ලැයිස්තුව</option>
-                    <option value="Bills">🧾 බිල්පත්</option>
-                    <option value="Travel">🚌 ගමන් වියදම්</option>
-                </select>
-            </div>
+            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." autocomplete="off">
             <div id="custom-suggestions" class="suggestions-box hidden"></div>
         </div>
 
-        <!-- Action Bar: Save Text එක ඉතිරි කර අනිත් ඒවා Icons කළ Layout එක -->
+        <!-- Action Bar: Save Text + Icon-only Buttons -->
         <div class="action-bar-grid">
             <button id="save-btn" class="action-btn save">💾 Save</button>
             <button id="view-btn" class="action-btn view icon-only" title="History බලන්න">📜</button>
@@ -81,21 +73,14 @@
                 <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
             </div>
 
-            <!-- Search & Filter Controls -->
+            <!-- Search Control -->
             <div class="history-controls">
                 <input type="text" id="history-search" placeholder="🔍 සෙවුම...">
-                <select id="history-filter-cat">
-                    <option value="ALL">සියල්ල</option>
-                    <option value="General">🏷️ සාමාන්‍ය</option>
-                    <option value="Groceries">🛒 බඩු ලැයිස්තුව</option>
-                    <option value="Bills">🧾 බිල්පත්</option>
-                    <option value="Travel">🚌 ගමන් වියදම්</option>
-                </select>
             </div>
 
             <div id="saved-list" class="saved-list"></div>
 
-            <!-- History Total Calculation Display -->
+            <!-- History Total Display -->
             <div class="history-total-box">
                 <span>මුළු එකතුව (Total):</span>
                 <span id="history-total-val">0.00</span>
@@ -115,13 +100,6 @@
             <div class="edit-form">
                 <label>විස්තරය / Note:</label>
                 <input type="text" id="edit-note">
-                <label>Category:</label>
-                <select id="edit-category">
-                    <option value="General">🏷️ සාමාන්‍ය</option>
-                    <option value="Groceries">🛒 බඩු ලැයිස්තුව</option>
-                    <option value="Bills">🧾 බිල්පත්</option>
-                    <option value="Travel">🚌 ගමන් වියදම්</option>
-                </select>
                 <label>අගය / Value:</label>
                 <input type="text" id="edit-expression">
                 <div class="modal-actions icon-actions">
@@ -151,11 +129,9 @@
                 </select>
                 <div class="modal-actions icon-actions">
                     <button id="confirm-download-btn" class="action-btn export icon-only" title="Download">
-                        <span id="download-spinner" class="spinner hidden"></span>
                         <span id="download-btn-text">⬇️</span>
                     </button>
                     <button id="confirm-share-btn" class="action-btn share icon-only" title="Share File">
-                        <span id="share-spinner" class="spinner hidden"></span>
                         <span id="share-btn-text">🔗</span>
                     </button>
                     <button id="cancel-download-btn" class="action-btn cancel icon-only" title="Cancel">✖️</button>
@@ -191,7 +167,7 @@
                 </div>
 
                 <div class="setting-item flex-col align-start">
-                    <span id="txt-audio-label">Music Player 🎵</span>
+                    <span>Music Player 🎵</span>
                     <div class="music-player-box">
                         <div id="player-song-title" class="song-title">2026 Sinhala Hit 01</div>
                         <div id="audio-visualizer" class="visualizer-container">
@@ -218,8 +194,8 @@
                 <div class="setting-item flex-col align-start">
                     <span>Data Backup & Sync</span>
                     <div class="backup-actions">
-                        <button id="export-json-btn" class="btn-small" title="Export Backup">💾 Backup</button>
-                        <button id="import-json-btn" class="btn-small" title="Import Backup">📂 Restore</button>
+                        <button id="export-json-btn" class="btn-small">💾 Backup</button>
+                        <button id="import-json-btn" class="btn-small">📂 Restore</button>
                         <input type="file" id="import-file-input" accept=".json" class="hidden">
                     </div>
                 </div>
