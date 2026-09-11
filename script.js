@@ -111,45 +111,72 @@
         setupSettings();
         applyTheme(currentTheme);
         applyLanguage(currentLang);
+
+        // Global User Interaction Listener to Unlock Audio Context
+        const unlockAudio = () => {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            if (localStorage.getItem('wm_calc_audio') === 'true' && !isAudioPlaying) {
+                startHorrorMusic();
+            }
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        };
+
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('keydown', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
     }
 
     /* ==================== AUDIO SYNTHESIZER ==================== */
     function initAudioContext() {
         if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                audioCtx = new AudioContextClass();
+            }
         }
-        if (audioCtx.state === 'suspended') {
+        if (audioCtx && audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
     }
 
     function playHorrorNote() {
-        if (!isAudioPlaying || !audioCtx) return;
+        if (!isAudioPlaying) return;
+
+        initAudioContext();
+        if (!audioCtx) return;
 
         const freq = horrorNotes[Math.floor(Math.random() * horrorNotes.length)];
         
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
 
-        osc.type = Math.random() > 0.5 ? 'sawtooth' : 'triangle';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.type = Math.random() > 0.5 ? 'sawtooth' : 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
-        osc.frequency.exponentialRampToValueAtTime(
-            freq * (Math.random() > 0.5 ? 1.05 : 0.95), 
-            audioCtx.currentTime + 2.5
-        );
+            osc.frequency.exponentialRampToValueAtTime(
+                freq * (Math.random() > 0.5 ? 1.05 : 0.95), 
+                audioCtx.currentTime + 2.5
+            );
 
-        gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.8);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0);
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.5);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 3.0);
 
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
 
-        osc.start();
-        osc.stop(audioCtx.currentTime + 3.0);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 3.0);
+        } catch (e) {
+            console.error('Audio playback error:', e);
+        }
 
-        const nextInterval = Math.random() * 1500 + 1000;
+        const nextInterval = Math.random() * 1200 + 800;
         audioTimer = setTimeout(playHorrorNote, nextInterval);
     }
 
@@ -183,13 +210,6 @@
         const savedAudioState = localStorage.getItem('wm_calc_audio') === 'true';
         if (audioToggle) {
             audioToggle.checked = savedAudioState;
-            if (savedAudioState) {
-                const autoStartHandler = () => {
-                    if (audioToggle.checked) startHorrorMusic();
-                    document.removeEventListener('click', autoStartHandler);
-                };
-                document.addEventListener('click', autoStartHandler);
-            }
         }
 
         if (settingsBtn) {
