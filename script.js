@@ -232,6 +232,7 @@
             else if (action === 'calculate') calculateResult();
         });
 
+        // Cumulative Save logic: Existing Note එකක් දුන් විට පරණ අගයට අලුත් අගය එකතු වේ
         document.getElementById('save-btn').addEventListener('click', () => {
             let resultValStr = display.value.trim().replace(/,/g, '');
             const note = calcNote.value.trim() || 'General Calculation';
@@ -241,18 +242,41 @@
                 return;
             }
 
-            const now = new Date();
-            const record = {
-                id: Date.now(),
-                date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
-                time: now.toLocaleTimeString(),
-                note: note,
-                expression: resultValStr
-            };
+            const newValue = parseFloat(resultValStr);
+            if (isNaN(newValue)) {
+                alert('ඇතුළත් කළ අගය නිවැරදි නැත!');
+                return;
+            }
 
-            savedRecords.push(record);
+            const now = new Date();
+            const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const formattedTime = now.toLocaleTimeString();
+
+            // Check if note already exists
+            const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
+
+            if (existingIndex !== -1) {
+                const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
+                const updatedVal = currentVal + newValue;
+                
+                savedRecords[existingIndex].expression = updatedVal.toString();
+                savedRecords[existingIndex].date = formattedDate;
+                savedRecords[existingIndex].time = formattedTime;
+                
+                showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`);
+            } else {
+                const record = {
+                    id: Date.now(),
+                    date: formattedDate,
+                    time: formattedTime,
+                    note: note,
+                    expression: newValue.toString()
+                };
+                savedRecords.push(record);
+                showToast('🎉 Data Saved Successfully!');
+            }
+
             saveToStorage();
-            showToast('🎉 Data Saved Successfully!');
             calcNote.value = '';
             display.value = '';
             livePreview.innerText = '';
@@ -301,6 +325,7 @@
         document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
     }
 
+    // Direct Web Share API Integration with Fallback
     async function processExport(isShare = false) {
         const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
         const format = document.getElementById('export-format').value;
@@ -320,12 +345,14 @@
 
             const opt = { margin: 10, filename: `${fname}.pdf` };
             
-            if (isShare && navigator.share) {
+            if (isShare) {
                 const pdfWorker = html2pdf().set(opt).from(tempDiv);
                 contentBlob = await pdfWorker.output('blob');
                 mimeType = 'application/pdf';
             } else {
                 html2pdf().set(opt).from(tempDiv).save();
+                downloadModal.classList.add('hidden');
+                return;
             }
         } else if (format === 'html' || format === 'xml') {
             mimeType = format === 'html' ? 'text/html' : 'text/xml';
@@ -349,35 +376,39 @@
 
         if (isShare) {
             const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
+            
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
                         files: [file],
-                        title: 'WM Calculator Report',
-                        text: 'Here is my calculation history report.'
+                        title: fname,
+                        text: 'WM Calculator History Report'
                     });
-                    showToast('🔗 Shared successfully!');
+                    showToast('🔗 Share කිරීම සාර්ථකයි!');
                 } catch (err) {
                     if (err.name !== 'AbortError') {
-                        showToast('Sharing failed. Downloading instead...');
+                        showToast('Sharing අසමත් විය. File එක Download කරනු ලැබේ...');
                         downloadBlob(contentBlob, `${fname}.${extension}`);
                     }
                 }
             } else {
-                let summaryText = `WM Calculator History:\n` + savedRecords.slice(-5).map(r => `${r.note}: ${r.expression}`).join('\n');
+                let summaryText = `WM Calculator History:\n` + savedRecords.map(r => `${r.note}: ${r.expression}`).join('\n');
                 if (navigator.share) {
                     try {
-                        await navigator.share({ title: fname, text: summaryText });
-                        showToast('🔗 Shared text successfully!');
+                        await navigator.share({
+                            title: fname,
+                            text: summaryText
+                        });
+                        showToast('🔗 Text ලෙස Share කරන ලදී!');
                     } catch (e) {}
                 } else if (navigator.clipboard) {
                     navigator.clipboard.writeText(summaryText);
-                    showToast('📋 Copied report to clipboard!');
+                    showToast('📋 Clipboard එකට Copy කරන ලදී!');
                 } else {
                     downloadBlob(contentBlob, `${fname}.${extension}`);
                 }
             }
-        } else if (format !== 'pdf' || !window.html2pdf) {
+        } else {
             downloadBlob(contentBlob, `${fname}.${extension}`);
         }
 
@@ -557,7 +588,10 @@
             unique.forEach(n => {
                 const d = document.createElement('div');
                 d.className = 'suggestion-item'; d.innerText = n;
-                d.addEventListener('click', () => { calcNote.value = n; suggestionsBox.classList.add('hidden'); });
+                d.addEventListener('click', () => { 
+                    calcNote.value = n; 
+                    suggestionsBox.classList.add('hidden'); 
+                });
                 suggestionsBox.appendChild(d);
             });
             suggestionsBox.classList.remove('hidden');
@@ -577,3 +611,4 @@
     function showToast(msg) { toast.innerText = msg; toast.classList.remove('hidden'); setTimeout(() => toast.classList.add('hidden'), 2200); }
     function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
 })();
+
