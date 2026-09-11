@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 * {
     box-sizing: border-box;
@@ -344,9 +344,9 @@ body {
 .saved-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 14px;
-    max-height: 240px;
+    max-height: 260px;
     overflow-y: auto;
 }
 
@@ -371,27 +371,55 @@ body {
 .swipe-bg-left { background: #1976d2; justify-content: flex-start; }
 .swipe-bg-right { background: #d32f2f; justify-content: flex-end; }
 
+/* Enhanced History Item Layout */
 .saved-item {
     position: relative;
     background: var(--btn-bg);
-    padding: 10px 14px;
+    padding: 12px 14px;
     z-index: 2;
     transition: transform 0.2s;
     border-radius: 10px;
     border: 1px solid var(--border-color);
 }
 
+.saved-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+}
+
 .saved-item-title {
-    font-weight: 600;
+    font-weight: 700;
     color: #ff9800;
-    font-size: 14px;
+    font-size: 15px;
     word-break: break-word;
 }
 
+.saved-item-date {
+    color: #888888;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.saved-item-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 6px;
+}
+
+.saved-item-label {
+    font-size: 12px;
+    color: #aaa;
+}
+
 .saved-item-result {
-    font-size: 16px;
-    font-weight: 700;
-    margin-top: 4px;
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
 }
 
 .history-total-box {
@@ -616,4 +644,3 @@ input:checked + .slider:before { transform: translateX(22px); }
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
     border: 1px solid #444444;
 }
-
