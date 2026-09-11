@@ -297,13 +297,17 @@
         document.getElementById('close-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
         document.getElementById('cancel-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
 
-        document.getElementById('confirm-download-btn').addEventListener('click', processExport);
-        document.getElementById('confirm-share-btn').addEventListener('click', processExport);
+        document.getElementById('confirm-download-btn').addEventListener('click', () => processExport(false));
+        document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
     }
 
-    function processExport() {
+    async function processExport(isShare = false) {
         const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
         const format = document.getElementById('export-format').value;
+
+        let contentBlob = null;
+        let mimeType = 'text/plain';
+        let extension = format;
 
         if (format === 'pdf' && window.html2pdf) {
             const tempDiv = document.createElement('div');
@@ -313,9 +317,18 @@
                 <tr><th>Date</th><th>Note</th><th>Value</th></tr>` +
                 savedRecords.map(r => `<tr><td>${r.date} ${r.time}</td><td>${escapeHTML(r.note)}</td><td>${r.expression}</td></tr>`).join('') +
                 `</table>`;
+
+            const opt = { margin: 10, filename: `${fname}.pdf` };
             
-            html2pdf().set({ margin: 10, filename: `${fname}.pdf` }).from(tempDiv).save();
+            if (isShare && navigator.share) {
+                const pdfWorker = html2pdf().set(opt).from(tempDiv);
+                contentBlob = await pdfWorker.output('blob');
+                mimeType = 'application/pdf';
+            } else {
+                html2pdf().set(opt).from(tempDiv).save();
+            }
         } else if (format === 'html' || format === 'xml') {
+            mimeType = format === 'html' ? 'text/html' : 'text/xml';
             let content = '';
             if (format === 'html') {
                 content = `<html><head><title>${fname}</title></head><body><h2>Calculation History</h2><table border="1"><tr><th>Date</th><th>Note</th><th>Value</th></tr>` +
@@ -326,22 +339,57 @@
                     savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><value>${r.expression}</value></record>`).join('') +
                     `</records>`;
             }
-            const blob = new Blob([content], { type: format === 'html' ? 'text/html' : 'text/xml' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `${fname}.${format}`;
-            a.click();
+            contentBlob = new Blob([content], { type: mimeType });
         } else {
+            mimeType = 'application/msword';
+            extension = 'doc';
             let text = `WM Calculator Report\n\n` + savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression}`).join('\n');
-            const blob = new Blob([text], { type: 'text/plain' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `${fname}.doc`;
-            a.click();
+            contentBlob = new Blob([text], { type: 'text/plain' });
+        }
+
+        if (isShare) {
+            const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'WM Calculator Report',
+                        text: 'Here is my calculation history report.'
+                    });
+                    showToast('🔗 Shared successfully!');
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        showToast('Sharing failed. Downloading instead...');
+                        downloadBlob(contentBlob, `${fname}.${extension}`);
+                    }
+                }
+            } else {
+                let summaryText = `WM Calculator History:\n` + savedRecords.slice(-5).map(r => `${r.note}: ${r.expression}`).join('\n');
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ title: fname, text: summaryText });
+                        showToast('🔗 Shared text successfully!');
+                    } catch (e) {}
+                } else if (navigator.clipboard) {
+                    navigator.clipboard.writeText(summaryText);
+                    showToast('📋 Copied report to clipboard!');
+                } else {
+                    downloadBlob(contentBlob, `${fname}.${extension}`);
+                }
+            }
+        } else if (format !== 'pdf' || !window.html2pdf) {
+            downloadBlob(contentBlob, `${fname}.${extension}`);
         }
 
         downloadModal.classList.add('hidden');
-        showToast('📥 Export Completed!');
+    }
+
+    function downloadBlob(blob, filename) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        showToast('📥 Download Completed!');
     }
 
     function appendCharacter(char) {
@@ -416,7 +464,7 @@
                     <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
                     <div class="saved-item" data-id="${item.id}">
                         <div class="saved-item-title">${escapeHTML(item.note)}</div>
-                        <div style="color:#888; font-size:10px;">${item.date} | ${item.time}</div>
+                        <div style="color:#888; font-size:11px;">${item.date} | ${item.time}</div>
                         <div class="saved-item-result">${valNum.toLocaleString('en-US')}</div>
                     </div>
                 `;
@@ -478,11 +526,7 @@
 
     function exportBackupJSON() {
         const blob = new Blob([JSON.stringify(savedRecords, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `wm_calc_backup_${Date.now()}.json`;
-        a.click();
-        showToast('💾 Backup Exported Successfully!');
+        downloadBlob(blob, `wm_calc_backup_${Date.now()}.json`);
     }
 
     function importBackupJSON(e) {
