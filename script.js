@@ -10,7 +10,7 @@
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Synth Audio Engine Settings
+    // Audio Engine Settings
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -49,13 +49,14 @@
         bindEvents();
         setupSearchableSuggestions();
         setupSettings();
+        setupEditModalLivePreview();
         applyTheme(currentTheme);
 
         const sToggle = document.getElementById('sound-toggle');
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
-    /* Animated Auto-Dismiss Toast System */
+    /* Animated Auto-Dismiss Toast Alert System */
     function showToast(message, type = 'success', duration = 3000) {
         let container = document.getElementById('toast-container');
         if (!container) {
@@ -112,7 +113,7 @@
 
     function playClickSound() {
         if (!soundEnabled) return;
-        if (navigator.vibrate) navigator.vibrate(15);
+        if (navigator.vibrate) navigator.vibrate(12);
 
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -158,6 +159,7 @@
 
     function playNextMelodyStep() {
         if (!isAudioPlaying) return;
+
         initAudioContext();
         if (!audioCtx) return;
 
@@ -270,6 +272,22 @@
         document.getElementById('current-time').innerText = now.toLocaleTimeString();
     }
 
+    function setupEditModalLivePreview() {
+        const baseInput = document.getElementById('edit-expression');
+        const kgInput = document.getElementById('edit-add-kg');
+        const liveTotalElem = document.getElementById('edit-live-total');
+
+        function updateLiveTotal() {
+            const baseVal = parseFloat(baseInput.value) || 0;
+            const kgVal = parseFloat(kgInput.value) || 0;
+            const netTotal = baseVal + kgVal;
+            liveTotalElem.innerText = netTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        baseInput.addEventListener('input', updateLiveTotal);
+        kgInput.addEventListener('input', updateLiveTotal);
+    }
+
     function bindEvents() {
         document.querySelector('.buttons').addEventListener('click', (e) => {
             const btn = e.target.closest('button');
@@ -285,10 +303,9 @@
             else if (action === 'calculate') calculateResult();
         });
 
-        // Main Save Action
         document.getElementById('save-btn').addEventListener('click', () => {
             let resultValStr = display.value.trim().replace(/,/g, '');
-            const note = calcNote.value.trim() || 'General Item';
+            const note = calcNote.value.trim() || 'General Calculation';
 
             if (!resultValStr || resultValStr === 'Error') {
                 showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
@@ -305,31 +322,19 @@
             const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             const formattedTime = now.toLocaleTimeString();
 
-            // Check if record exists with exact note name
-            const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
-
-            if (existingIndex !== -1) {
-                const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
-                const updatedVal = currentVal + newValue;
-                
-                savedRecords[existingIndex].expression = updatedVal.toString();
-                savedRecords[existingIndex].date = formattedDate;
-                savedRecords[existingIndex].time = formattedTime;
-                
-                showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`, 'info');
-            } else {
-                const record = {
-                    id: Date.now(),
-                    date: formattedDate,
-                    time: formattedTime,
-                    note: note,
-                    expression: newValue.toString(),
-                    additionalKg: 0,
-                    piecesCount: 0
-                };
-                savedRecords.push(record);
-                showToast('🎉 Data Saved Successfully!', 'success');
-            }
+            // Save record with initial zero kg and zero pieces
+            const record = {
+                id: Date.now(),
+                date: formattedDate,
+                time: formattedTime,
+                note: note,
+                expression: newValue.toString(),
+                additionalKg: 0,
+                piecesCount: 0
+            };
+            
+            savedRecords.push(record);
+            showToast('🎉 දත්ත සාර්ථකව සුරකින ලදී!', 'success');
 
             saveToStorage();
             calcNote.value = '';
@@ -343,10 +348,11 @@
         });
 
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
-        document.getElementById('close-history-x').addEventListener('click', () => savedModal.classList.add('hidden'));
+        document.getElementById('close-saved-x').addEventListener('click', () => savedModal.classList.add('hidden'));
         document.getElementById('history-search').addEventListener('input', renderHistory);
 
         document.getElementById('clear-all-btn').addEventListener('click', () => {
+            if (savedRecords.length === 0) return showToast('මකා දැමීමට දත්ත නොමැත!', 'warning');
             showConfirmDialog(
                 'සියල්ල මකා දැමීම', 
                 'Saved History එකෙහි ඇති සියලුම දත්ත මකා දැමීමට ඔබට විශ්වාසද?', 
@@ -359,40 +365,26 @@
             );
         });
 
-        // Edit Modal Live Total Calculation Listener
-        const editExprInput = document.getElementById('edit-expression');
-        const editKgInput = document.getElementById('edit-add-kg');
-
-        function updateEditCalculatedTotal() {
-            const base = parseFloat(editExprInput.value) || 0;
-            const extraKg = parseFloat(editKgInput.value) || 0;
-            const total = base + extraKg;
-            document.getElementById('edit-calculated-total').innerText = total.toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        editExprInput.addEventListener('input', updateEditCalculatedTotal);
-        editKgInput.addEventListener('input', updateEditCalculatedTotal);
-
         document.getElementById('close-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
         document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
 
-        // Save Edit Changes
+        // Save Edit Changes (Main Custom Logic Handling kg & pieces addition)
         document.getElementById('save-edit-btn').addEventListener('click', () => {
             if (!editingRecordId) return;
 
-            const newNote = document.getElementById('edit-note').value.trim() || 'General Item';
-            const baseVal = parseFloat(document.getElementById('edit-expression').value) || 0;
+            const newNote = document.getElementById('edit-note').value.trim() || 'General Calculation';
+            const newExpr = parseFloat(document.getElementById('edit-expression').value) || 0;
             const addKg = parseFloat(document.getElementById('edit-add-kg').value) || 0;
-            const pcs = parseInt(document.getElementById('edit-pieces').value) || 0;
+            const pieces = parseInt(document.getElementById('edit-pieces').value, 10) || 0;
 
             savedRecords = savedRecords.map(r => {
                 if (r.id === editingRecordId) {
                     return {
                         ...r,
                         note: newNote,
-                        expression: baseVal.toString(),
+                        expression: newExpr.toString(),
                         additionalKg: addKg,
-                        piecesCount: pcs
+                        piecesCount: pieces
                     };
                 }
                 return r;
@@ -401,7 +393,7 @@
             saveToStorage();
             editModal.classList.add('hidden');
             renderHistory();
-            showToast('සංස්කරණය කර සාර්ථකව සුරකින ලදී!', 'success');
+            showToast('✏️ සංස්කරණය සාර්ථකව සුරකින ලදී!', 'success');
         });
 
         document.getElementById('download-btn').addEventListener('click', () => {
@@ -421,22 +413,21 @@
         let totalSum = 0;
         const rows = savedRecords.map((r, index) => {
             const baseVal = parseFloat(r.expression) || 0;
-            const addKg = parseFloat(r.additionalKg) || 0;
-            const total = baseVal + addKg;
-            totalSum += total;
+            const kgVal = parseFloat(r.additionalKg) || 0;
+            const pieces = parseInt(r.piecesCount, 10) || 0;
+            const itemTotal = baseVal + kgVal;
+            totalSum += itemTotal;
 
-            let breakdownStr = `${baseVal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            if (addKg > 0) breakdownStr += ` + ${addKg} kg`;
-            if (r.piecesCount > 0) breakdownStr += ` (${r.piecesCount} pcs)`;
+            let addDetails = '';
+            if (kgVal > 0 || pieces > 0) {
+                addDetails = `<br><span style="color:#0284c7; font-size:11px;">+ ${kgVal} kg (${pieces} කෑලි)</span>`;
+            }
 
             return `
                 <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
                     <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">${r.date} <br><span style="color:#9ca3af; font-size:11px;">${r.time}</span></td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 14px;">
-                        ${escapeHTML(r.note)}
-                        <div style="font-size:11px; color:#6b7280; font-weight:normal;">${breakdownStr}</div>
-                    </td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 15px; text-align: right;">${total.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 14px;">${escapeHTML(r.note)} ${addDetails}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 15px; text-align: right;">${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                 </tr>
             `;
         }).join('');
@@ -446,7 +437,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
                         <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR PRO</h1>
-                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Saved History & Calculation Report</p>
+                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Calculation Statement & History Report</p>
                     </div>
                     <div style="text-align: right; color: #6b7280; font-size: 12px;">
                         <div>Date: ${new Date().toLocaleDateString()}</div>
@@ -458,8 +449,8 @@
                     <thead>
                         <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
                             <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Date & Time</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description & Breakdown</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Total Amount</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (Note)</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Net Amount</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -472,6 +463,12 @@
                         <span style="font-size: 13px; color: #c2410c; font-weight: 600; display: block;">GRAND TOTAL</span>
                         <span style="font-size: 22px; color: #9a3412; font-weight: 800;">${totalSum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
+                </div>
+
+                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">
+                        Application created by WM Calculator Pro
+                    </p>
                 </div>
             </div>
         `;
@@ -514,7 +511,7 @@
                 content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
             } else {
                 content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
-                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><baseValue>${r.expression}</baseValue><addKg>${r.additionalKg||0}</addKg><pieces>${r.piecesCount||0}</pieces></record>`).join('') +
+                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><base_val>${r.expression}</base_val><add_kg>${r.additionalKg || 0}</add_kg><pieces>${r.piecesCount || 0}</pieces></record>`).join('') +
                     `</records>`;
             }
             contentBlob = new Blob([content], { type: mimeType });
@@ -522,7 +519,8 @@
             mimeType = 'application/msword';
             extension = 'doc';
             let text = `WM CALCULATOR REPORT\n\n` + 
-                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: Base: ${r.expression}, Add: ${r.additionalKg||0}kg, Pcs: ${r.piecesCount||0}`).join('\n');
+                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: Base=${r.expression}, Added=${r.additionalKg || 0}kg (${r.piecesCount || 0} pcs)`).join('\n') +
+                `\n\n----------------------------------------\nApplication created by WM Calculator Pro`;
             contentBlob = new Blob([text], { type: 'text/plain' });
         }
 
@@ -595,16 +593,17 @@
         }
     }
 
-    /* Render Redesigned Saved History Cards */
     function renderHistory() {
         savedList.innerHTML = '';
         const searchTxt = document.getElementById('history-search').value.toLowerCase();
 
         const filtered = savedRecords.filter(r => {
-            return r.note.toLowerCase().includes(searchTxt) || String(r.expression).includes(searchTxt);
+            return r.note.toLowerCase().includes(searchTxt) || 
+                   String(r.expression).includes(searchTxt) ||
+                   String(r.additionalKg || '').includes(searchTxt);
         });
 
-        let totalSum = 0;
+        let grandTotal = 0;
 
         if (filtered.length === 0) {
             savedList.innerHTML = '<p style="color:#888; text-align:center; padding:20px; font-size:13px;">දත්ත කිසිවක් හමු නොවුණි.</p>';
@@ -612,37 +611,47 @@
             filtered.slice().reverse().forEach(item => {
                 const baseVal = parseFloat(item.expression) || 0;
                 const addKg = parseFloat(item.additionalKg) || 0;
-                const pieces = parseInt(item.piecesCount) || 0;
-                const grandTotal = baseVal + addKg;
-
-                totalSum += grandTotal;
+                const pieces = parseInt(item.piecesCount, 10) || 0;
+                
+                const itemTotal = baseVal + addKg;
+                grandTotal += itemTotal;
 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'saved-item-wrapper';
 
-                // Badges HTML
-                let badgesHTML = `<span class="detail-badge">මුලික: ${baseVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>`;
+                let badgesHTML = '';
                 if (addKg > 0) {
-                    badgesHTML += `<span class="detail-badge kg-badge">⚖️ +${addKg.toLocaleString('en-US')} kg</span>`;
+                    badgesHTML += `<span class="tag-badge tag-kg">+ ${addKg.toLocaleString('en-US')} kg</span>`;
                 }
                 if (pieces > 0) {
-                    badgesHTML += `<span class="detail-badge pcs-badge">🧩 ${pieces} කෑලි</span>`;
+                    badgesHTML += `<span class="tag-badge tag-pieces">${pieces} කෑලි</span>`;
                 }
 
                 wrapper.innerHTML = `
-                    <div class="swipe-background swipe-bg-right">✏️ Edit</div>
-                    <div class="swipe-background swipe-bg-left">🗑️ Delete</div>
+                    <div class="swipe-background swipe-bg-left">✏️ Edit Modal</div>
+                    <div class="swipe-background swipe-bg-right">🗑️ Delete Item</div>
                     <div class="saved-item" data-id="${item.id}">
                         <div class="saved-item-header">
                             <span class="saved-item-title">${escapeHTML(item.note)}</span>
                             <span class="saved-item-date">${item.date} | ${item.time}</span>
                         </div>
-                        <div class="saved-item-details">
-                            ${badgesHTML}
-                        </div>
                         <div class="saved-item-body">
-                            <span class="saved-item-label">එකතුව (Total):</span>
-                            <span class="saved-item-result">${grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            <div class="item-row">
+                                <span class="item-label">මුල් අගය:</span>
+                                <span class="item-val">${baseVal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            </div>
+
+                            ${(addKg > 0 || pieces > 0) ? `
+                            <div class="item-row">
+                                <span class="item-label">අලුතින් එකතු කළේ:</span>
+                                <div class="item-badge-container">${badgesHTML}</div>
+                            </div>
+                            ` : ''}
+
+                            <div class="saved-item-total-row">
+                                <span class="saved-item-total-label">එකතුව (Net Total):</span>
+                                <span class="saved-item-result">${itemTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -652,10 +661,10 @@
             });
         }
 
-        document.getElementById('history-total-val').innerText = totalSum.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        document.getElementById('history-total-val').innerText = grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 });
     }
 
-    /* Direction-Aware Swipe Gestures (Right = Edit | Left = Delete) */
+    /* Swipe Gesture Engine (Prevents Vertical Scroll Block) */
     function setupSwipeGesture(element, item) {
         let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
 
@@ -676,7 +685,6 @@
             currentX = touchX - startX;
             currentY = touchY - startY;
 
-            // Prevent swipe gesture if user is scrolling vertically
             if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
                 isScrolling = true;
                 element.style.transform = 'translateX(0)';
@@ -685,26 +693,36 @@
 
             if (isScrolling) return;
 
-            // Resistance bounds
-            if (currentX > 110) currentX = 110;
-            if (currentX < -110) currentX = -110;
-            
+            if (currentX > 100) currentX = 100;
+            if (currentX < -100) currentX = -100;
             element.style.transform = `translateX(${currentX}px)`;
         };
 
         const end = () => {
             if (!isSwiping) return;
             isSwiping = false;
-            element.style.transition = 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            element.style.transition = 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)';
 
             if (!isScrolling) {
-                // Swipe Right -> Trigger EDIT Popup
-                if (currentX > 60) {
+                // Swipe Right -> Trigger Edit Modal
+                if (currentX > 55) {
                     element.style.transform = 'translateX(0)';
-                    openEditModal(item);
+                    editingRecordId = item.id;
+                    
+                    document.getElementById('edit-note').value = item.note || '';
+                    document.getElementById('edit-expression').value = item.expression || '0';
+                    document.getElementById('edit-add-kg').value = item.additionalKg || '';
+                    document.getElementById('edit-pieces').value = item.piecesCount || '';
+
+                    // Trigger live total update inside modal
+                    const baseVal = parseFloat(item.expression) || 0;
+                    const kgVal = parseFloat(item.additionalKg) || 0;
+                    document.getElementById('edit-live-total').innerText = (baseVal + kgVal).toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+                    editModal.classList.remove('hidden');
                 } 
-                // Swipe Left -> Trigger DELETE Dialog
-                else if (currentX < -60) {
+                // Swipe Left -> Trigger Delete Action
+                else if (currentX < -55) {
                     element.style.transform = 'translateX(0)';
                     showConfirmDialog(
                         'මකා දැමීම', 
@@ -725,28 +743,14 @@
         };
 
         if ('ontouchstart' in window) {
-            element.addEventListener('touchstart', start, {passive: true});
-            element.addEventListener('touchmove', move, {passive: true});
+            element.addEventListener('touchstart', start, {passive:true});
+            element.addEventListener('touchmove', move, {passive:true});
             element.addEventListener('touchend', end);
         } else {
             element.addEventListener('mousedown', start);
             element.addEventListener('mousemove', (e) => isSwiping && move(e));
             element.addEventListener('mouseup', end);
         }
-    }
-
-    function openEditModal(item) {
-        editingRecordId = item.id;
-        document.getElementById('edit-note').value = item.note || '';
-        document.getElementById('edit-expression').value = item.expression || 0;
-        document.getElementById('edit-add-kg').value = item.additionalKg ? item.additionalKg : '';
-        document.getElementById('edit-pieces').value = item.piecesCount ? item.piecesCount : '';
-
-        const base = parseFloat(item.expression) || 0;
-        const extraKg = parseFloat(item.additionalKg) || 0;
-        document.getElementById('edit-calculated-total').innerText = (base + extraKg).toLocaleString('en-US', { minimumFractionDigits: 2 });
-
-        editModal.classList.remove('hidden');
     }
 
     function exportBackupJSON() {
