@@ -112,14 +112,14 @@
 
     function playClickSound() {
         if (!soundEnabled) return;
-        if (navigator.vibrate) navigator.vibrate(15);
+        if (navigator.vibrate) navigator.vibrate(12);
 
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.frequency.setValueAtTime(800, ctx.currentTime);
-            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.setValueAtTime(0.04, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
             osc.connect(gain);
             gain.connect(ctx.destination);
@@ -174,7 +174,7 @@
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
             gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+            gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
             gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
 
             osc.connect(gain);
@@ -286,6 +286,7 @@
             else if (action === 'calculate') calculateResult();
         });
 
+        // Save Record Functionality
         document.getElementById('save-btn').addEventListener('click', () => {
             let resultValStr = display.value.trim().replace(/,/g, '');
             const note = calcNote.value.trim() || 'General Calculation';
@@ -305,30 +306,19 @@
             const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             const formattedTime = now.toLocaleTimeString();
 
-            const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
+            const record = {
+                id: Date.now(),
+                date: formattedDate,
+                time: formattedTime,
+                note: note,
+                expression: newValue.toString()
+            };
 
-            if (existingIndex !== -1) {
-                const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
-                const updatedVal = currentVal + newValue;
-                
-                savedRecords[existingIndex].expression = updatedVal.toString();
-                savedRecords[existingIndex].date = formattedDate;
-                savedRecords[existingIndex].time = formattedTime;
-                
-                showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`, 'info');
-            } else {
-                const record = {
-                    id: Date.now(),
-                    date: formattedDate,
-                    time: formattedTime,
-                    note: note,
-                    expression: newValue.toString()
-                };
-                savedRecords.push(record);
-                showToast('🎉 Data Saved Successfully!', 'success');
-            }
-
+            savedRecords.push(record);
             saveToStorage();
+            
+            showToast('🎉 Data Saved Successfully!', 'success');
+
             calcNote.value = '';
             display.value = '';
             livePreview.innerText = '';
@@ -340,9 +330,30 @@
         });
 
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
-        document.getElementById('history-search').addEventListener('input', renderHistory);
+        
+        const searchInput = document.getElementById('history-search');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+
+        searchInput.addEventListener('input', () => {
+            if (searchInput.value.trim().length > 0) {
+                clearSearchBtn.classList.remove('hidden');
+            } else {
+                clearSearchBtn.classList.add('hidden');
+            }
+            renderHistory();
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            renderHistory();
+        });
 
         document.getElementById('clear-all-btn').addEventListener('click', () => {
+            if (savedRecords.length === 0) {
+                showToast('මකා දැමීමට දත්ත නොමැත!', 'info');
+                return;
+            }
             showConfirmDialog(
                 'සියල්ල මකා දැමීම', 
                 'Saved History එකෙහි ඇති සියලුම දත්ත මකා දැමීමට ඔබට විශ්වාසද?', 
@@ -361,9 +372,14 @@
         document.getElementById('save-edit-btn').addEventListener('click', () => {
             if (!editingRecordId) return;
             const newNote = document.getElementById('edit-note').value.trim();
-            const newExpr = document.getElementById('edit-expression').value.trim();
+            const newExpr = document.getElementById('edit-expression').value.trim().replace(/,/g, '');
 
-            savedRecords = savedRecords.map(r => r.id === editingRecordId ? { ...r, note: newNote, expression: newExpr } : r);
+            if (isNaN(parseFloat(newExpr))) {
+                showToast('නිවැරදි අගයක් ඇතුළත් කරන්න!', 'error');
+                return;
+            }
+
+            savedRecords = savedRecords.map(r => r.id === editingRecordId ? { ...r, note: newNote || 'Untitled', expression: newExpr } : r);
             saveToStorage();
             editModal.classList.add('hidden');
             renderHistory();
@@ -528,7 +544,7 @@
     }
 
     function updateLivePreview() {
-        const val = display.value.trim();
+        const val = display.value.trim().replace(/,/g, '');
         if (!val) { livePreview.innerText = ''; return; }
         try {
             const expr = val.replace(/×/g, '*').replace(/÷/g, '/');
@@ -544,9 +560,10 @@
     }
 
     function calculateResult() {
-        if (!display.value.trim()) return;
+        const val = display.value.trim().replace(/,/g, '');
+        if (!val) return;
         try {
-            const expr = display.value.replace(/×/g, '*').replace(/÷/g, '/');
+            const expr = val.replace(/×/g, '*').replace(/÷/g, '/');
             const res = Function(`'use strict'; return (${expr})`)();
             if (isFinite(res)) {
                 const rounded = Math.round(res * 1e10) / 1e10;
@@ -558,95 +575,66 @@
         }
     }
 
+    /* Render Saved History with Professional Card Design */
     function renderHistory() {
         savedList.innerHTML = '';
-        const searchTxt = document.getElementById('history-search').value.toLowerCase();
+        const searchTxt = document.getElementById('history-search').value.toLowerCase().trim();
 
         const filtered = savedRecords.filter(r => {
             return r.note.toLowerCase().includes(searchTxt) || String(r.expression).includes(searchTxt);
         });
 
+        // Update History Badge Count
+        const badgeElem = document.getElementById('history-count-badge');
+        if (badgeElem) badgeElem.innerText = filtered.length;
+
         let totalSum = 0;
 
         if (filtered.length === 0) {
-            savedList.innerHTML = '<p style="color:#888; text-align:center; padding:15px;">දත්ත කිසිවක් හමු නොවුණි.</p>';
+            savedList.innerHTML = `
+                <div class="history-empty-state">
+                    <div class="empty-icon">📂</div>
+                    <p>${searchTxt ? 'සෙවුමට ගැලපෙන දත්ත කිසිවක් හමු නොවුණි.' : 'තවම සුරකින ලද දත්ත නොමැත.'}</p>
+                </div>
+            `;
         } else {
             filtered.slice().reverse().forEach(item => {
                 const valNum = parseFloat(item.expression) || 0;
                 totalSum += valNum;
 
-                const wrapper = document.createElement('div');
-                wrapper.className = 'saved-item-wrapper';
-                wrapper.innerHTML = `
-                    <div class="swipe-background swipe-bg-left">✏️ Edit</div>
-                    <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
-                    <div class="saved-item" data-id="${item.id}">
-                        <div class="saved-item-header">
-                            <span class="saved-item-title">${escapeHTML(item.note)}</span>
-                            <span class="saved-item-date">${item.date} | ${item.time}</span>
-                        </div>
-                        <div class="saved-item-body">
-                            <span class="saved-item-label">අගය:</span>
-                            <span class="saved-item-result">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                        </div>
+                const card = document.createElement('div');
+                card.className = 'history-card';
+                card.innerHTML = `
+                    <div class="history-card-header">
+                        <span class="history-item-note">${escapeHTML(item.note)}</span>
+                        <span class="history-item-time">📅 ${item.date} | 🕒 ${item.time}</span>
+                    </div>
+                    <div class="history-card-body">
+                        <span class="history-item-label">අගය (Amount):</span>
+                        <span class="history-item-value">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="history-card-actions">
+                        <button class="card-action-btn copy-btn" data-id="${item.id}" title="Calculator එකට යොදන්න">📋 Use</button>
+                        <button class="card-action-btn edit-btn" data-id="${item.id}">✏️ Edit</button>
+                        <button class="card-action-btn delete-btn" data-id="${item.id}">🗑️ Delete</button>
                     </div>
                 `;
-                setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
-                savedList.appendChild(wrapper);
-            });
-        }
 
-        document.getElementById('history-total-val').innerText = totalSum.toLocaleString('en-US', { minimumFractionDigits: 2 });
-    }
+                // Button Event Listeners inside Card
+                card.querySelector('.copy-btn').addEventListener('click', () => {
+                    display.value = valNum.toLocaleString('en-US');
+                    savedModal.classList.add('hidden');
+                    showToast('අගය Calculator එකට එකතු කරන ලදී!', 'info');
+                });
 
-    /* Direction-aware Swipe Gesture Engine (Prevents Vertical Scroll Block) */
-    function setupSwipeGesture(element, item) {
-        let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
-
-        const start = (e) => { 
-            startX = e.touches ? e.touches[0].clientX : e.clientX; 
-            startY = e.touches ? e.touches[0].clientY : e.clientY;
-            isSwiping = true; 
-            isScrolling = false;
-            element.style.transition = 'none'; 
-        };
-
-        const move = (e) => {
-            if (!isSwiping) return;
-            
-            let touchX = e.touches ? e.touches[0].clientX : e.clientX;
-            let touchY = e.touches ? e.touches[0].clientY : e.clientY;
-
-            currentX = touchX - startX;
-            currentY = touchY - startY;
-
-            if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
-                isScrolling = true;
-                element.style.transform = 'translateX(0)';
-                return;
-            }
-
-            if (isScrolling) return;
-
-            if (currentX > 100) currentX = 100;
-            if (currentX < -100) currentX = -100;
-            element.style.transform = `translateX(${currentX}px)`;
-        };
-
-        const end = () => {
-            if (!isSwiping) return;
-            isSwiping = false;
-            element.style.transition = 'transform 0.2s';
-
-            if (!isScrolling) {
-                if (currentX > 60) {
-                    element.style.transform = 'translateX(0)';
+                card.querySelector('.edit-btn').addEventListener('click', () => {
                     editingRecordId = item.id;
                     document.getElementById('edit-note').value = item.note;
                     document.getElementById('edit-expression').value = item.expression;
                     editModal.classList.remove('hidden');
-                } else if (currentX < -60) {
-                    element.style.transform = 'translateX(0)';
+                });
+
+                card.querySelector('.delete-btn').addEventListener('click', () => {
                     showConfirmDialog(
                         'මකා දැමීම', 
                         `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
@@ -657,23 +645,13 @@
                             showToast('දත්තය මකා දමන ලදී!', 'info');
                         }
                     );
-                } else {
-                    element.style.transform = 'translateX(0)';
-                }
-            }
-            currentX = 0;
-            currentY = 0;
-        };
+                });
 
-        if ('ontouchstart' in window) {
-            element.addEventListener('touchstart', start, {passive:true});
-            element.addEventListener('touchmove', move, {passive:true});
-            element.addEventListener('touchend', end);
-        } else {
-            element.addEventListener('mousedown', start);
-            element.addEventListener('mousemove', (e) => isSwiping && move(e));
-            element.addEventListener('mouseup', end);
+                savedList.appendChild(card);
+            });
         }
+
+        document.getElementById('history-total-val').innerText = totalSum.toLocaleString('en-US', { minimumFractionDigits: 2 });
     }
 
     function exportBackupJSON() {
