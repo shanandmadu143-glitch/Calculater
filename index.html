@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WM Calculator Pro</title>
+    <title>WM Calculator Pro MAX</title>
     <link rel="stylesheet" href="style.css">
     <!-- PDF Export Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="theme-dark">
-    <!-- Toast Notification Container -->
+    <!-- Animated Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
     <div class="calculator-container">
@@ -22,16 +22,35 @@
             <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">⚙️</button>
         </div>
 
-        <!-- Display Screen -->
-        <div class="display-container">
+        <!-- Mode Selector Switch -->
+        <div class="mode-selector">
+            <label class="mode-radio">
+                <input type="radio" name="app-mode" value="calc" checked>
+                <span class="mode-label">🖩 Calculator</span>
+            </label>
+            <label class="mode-radio">
+                <input type="radio" name="app-mode" value="kg">
+                <span class="mode-label">⚖️ Kg Mode</span>
+            </label>
+        </div>
+
+        <!-- Display Screen (Calculator Mode) -->
+        <div id="calc-display-area" class="display-container">
             <div id="live-preview" class="live-preview"></div>
             <input type="text" id="display" readonly placeholder="0">
         </div>
 
-        <!-- Note Input Area -->
+        <!-- Shared Note Input Area -->
         <div class="input-container">
-            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව, පඩි...)" autocomplete="off">
+            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව, නම)..." autocomplete="off">
             <div id="custom-suggestions" class="suggestions-box hidden"></div>
+        </div>
+
+        <!-- Kg Inputs Area (Hidden by default) -->
+        <div id="kg-inputs-area" class="kg-inputs-grid hidden">
+            <input type="number" id="kg-input-weight" placeholder="Kg ගණන (Weight)">
+            <input type="number" id="kg-input-pieces" placeholder="කොටස් ගණන (Pieces)">
+            <input type="number" id="kg-input-amount" class="full-width-input" placeholder="මුළු මුදල (Amount - Optional)">
         </div>
 
         <!-- Primary Action Buttons -->
@@ -41,8 +60,8 @@
             <button id="download-btn" class="action-btn export icon-only" title="Export / Share">📥</button>
         </div>
 
-        <!-- Keypad Grid -->
-        <div class="buttons">
+        <!-- Keypad Grid (Calculator Mode) -->
+        <div id="calc-keypad-area" class="buttons">
             <button data-action="clear" class="btn btn-cmd">C</button>
             <button data-action="delete" class="btn btn-cmd">⌫</button>
             <button data-val="/" class="btn btn-op">÷</button>
@@ -68,39 +87,27 @@
         </div>
     </div>
 
-    <!-- Saved History Modal -->
+    <!-- History Modal -->
     <div id="saved-modal" class="modal hidden">
-        <div class="modal-content history-modal-content">
+        <div class="modal-content large-modal">
             <div class="modal-header">
-                <div class="modal-title-group">
-                    <h3>📜 Saved History</h3>
-                    <span id="history-count-badge" class="count-badge">0</span>
-                </div>
-                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️ මකන්න</button>
+                <h3>📜 Saved History</h3>
+                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
             </div>
-
+            
             <div class="history-controls">
-                <div class="search-input-wrapper">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="history-search" placeholder="සෙවුම (Search note or amount)...">
-                    <button id="clear-search-btn" class="clear-search-btn hidden">&times;</button>
-                </div>
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
+                <p class="swipe-hint">👉 Swipe Right to Edit | Swipe Left to Delete 👈</p>
             </div>
 
-            <!-- Saved History List -->
             <div id="saved-list" class="saved-list"></div>
 
-            <!-- Total Analytics Box -->
-            <div class="history-summary-card">
-                <div class="summary-item">
-                    <span class="summary-label">මුළු එකතුව (Total):</span>
-                    <span id="history-total-val" class="summary-value">0.00</span>
-                </div>
+            <div class="history-total-box">
+                <span>මුළු එකතුව (Total):</span>
+                <span id="history-total-val">0.00</span>
             </div>
 
-            <div class="modal-footer-actions">
-                <button id="close-modal-btn" class="close-btn">✖️ වසා දමන්න (Close)</button>
-            </div>
+            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ Close</button>
         </div>
     </div>
 
@@ -108,17 +115,26 @@
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✏️ සංස්කරණය (Edit Record)</h3>
+                <h3>✏️ සංස්කරණය (Edit)</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label for="edit-note">විස්තරය / Description:</label>
+                <label for="edit-note">විස්තරය / Note:</label>
                 <input type="text" id="edit-note">
-                <label for="edit-expression">අගය / Value:</label>
-                <input type="text" id="edit-expression">
+                
+                <div id="edit-kg-section" class="hidden">
+                    <label>Kg ගණන:</label>
+                    <input type="number" id="edit-kg-val">
+                    <label>කොටස් ගණන:</label>
+                    <input type="number" id="edit-pieces-val">
+                </div>
+
+                <label for="edit-expression">අගය / Amount:</label>
+                <input type="number" id="edit-expression">
+
                 <div class="modal-actions icon-actions">
-                    <button id="save-edit-btn" class="action-btn save" title="Save Changes">💾 සුරකින්න</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel" title="Cancel">✖️ අවලංගුයි</button>
+                    <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾 Save</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️ Cancel</button>
                 </div>
             </div>
         </div>
@@ -161,8 +177,8 @@
                 <div class="setting-item">
                     <span>Theme</span>
                     <select id="theme-select">
-                        <option value="theme-dark">🌙 Dark Mode</option>
-                        <option value="theme-light">☀️ Light Mode</option>
+                        <option value="theme-dark">🌙 Premium Dark</option>
+                        <option value="theme-light">☀️ Clean Light</option>
                         <option value="theme-neon">⚡ Neon Cyber</option>
                         <option value="theme-emerald">🌿 Emerald Green</option>
                     </select>
@@ -174,31 +190,6 @@
                         <input type="checkbox" id="sound-toggle" checked>
                         <span class="slider round"></span>
                     </label>
-                </div>
-
-                <div class="setting-item flex-col align-start">
-                    <span>Music Player 🎵</span>
-                    <div class="music-player-box">
-                        <div id="player-song-title" class="song-title">2026 Sinhala Hit 01</div>
-                        <div id="audio-visualizer" class="visualizer-container">
-                            <div class="v-bar"></div>
-                            <div class="v-bar"></div>
-                            <div class="v-bar"></div>
-                            <div class="v-bar"></div>
-                            <div class="v-bar"></div>
-                        </div>
-
-                        <div class="player-controls">
-                            <button id="player-prev-btn" class="player-btn">⏮️</button>
-                            <button id="player-play-btn" class="player-btn play-btn">▶️</button>
-                            <button id="player-next-btn" class="player-btn">⏭️</button>
-                        </div>
-
-                        <div class="volume-box">
-                            <span>🔊</span>
-                            <input type="range" id="player-volume" min="0" max="1" step="0.05" value="0.5">
-                        </div>
-                    </div>
                 </div>
 
                 <div class="setting-item flex-col align-start">
