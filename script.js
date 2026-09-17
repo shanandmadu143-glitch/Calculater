@@ -1,16 +1,18 @@
 (function () {
     'use strict';
 
-    let display, livePreview, calcNote, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
+    let display, livePreview, calcNote, savedModal, editModal, downloadModal, settingsModal, savedList;
+    let standardCalcView, kgCalcView, calcModeToggle;
+    let kgItemName, kgPartsInput, kgTotalPreview, kgPriceInput;
     let savedRecords = [];
     let editingRecordId = null;
 
-    const STORAGE_KEY = 'wm_calculator_records_v3';
+    const STORAGE_KEY = 'wm_calculator_records_v4';
 
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Synth Audio Engine Settings
+    // Music Synth Engine
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -22,7 +24,6 @@
         { title: "2026 Sinhala Hit 02 - හිතට දැනෙනා", speed: 320, pattern: [293.66, 349.23, 440.00, 587.33, 440.00, 349.23] },
         { title: "2026 Sinhala Hit 03 - සුළඟක් වී", speed: 420, pattern: [329.63, 392.00, 493.88, 659.25, 493.88, 392.00] }
     ];
-
     let currentPatternIndex = 0;
 
     document.addEventListener('DOMContentLoaded', initApp);
@@ -36,7 +37,15 @@
         downloadModal = document.getElementById('download-modal');
         settingsModal = document.getElementById('settings-modal');
         savedList = document.getElementById('saved-list');
-        suggestionsBox = document.getElementById('custom-suggestions');
+
+        standardCalcView = document.getElementById('standard-calc-view');
+        kgCalcView = document.getElementById('kg-calc-view');
+        calcModeToggle = document.getElementById('calc-mode-toggle');
+
+        kgItemName = document.getElementById('kg-item-name');
+        kgPartsInput = document.getElementById('kg-parts-input');
+        kgTotalPreview = document.getElementById('kg-total-preview');
+        kgPriceInput = document.getElementById('kg-price-input');
 
         try {
             savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -55,7 +64,6 @@
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
-    /* Animated Auto-Dismiss Toast Alert System */
     function showToast(message, type = 'success', duration = 3000) {
         let container = document.getElementById('toast-container');
         if (!container) {
@@ -112,14 +120,14 @@
 
     function playClickSound() {
         if (!soundEnabled) return;
-        if (navigator.vibrate) navigator.vibrate(12);
+        if (navigator.vibrate) navigator.vibrate(15);
 
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.frequency.setValueAtTime(800, ctx.currentTime);
-            gain.gain.setValueAtTime(0.04, ctx.currentTime);
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
             osc.connect(gain);
             gain.connect(ctx.destination);
@@ -128,87 +136,596 @@
         } catch (e) {}
     }
 
-    function initAudioContext() {
-        if (!audioCtx) {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioContextClass) {
-                audioCtx = new AudioContextClass();
-                masterGain = audioCtx.createGain();
-                const vol = parseFloat(document.getElementById('player-volume').value) || 0.5;
-                masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
-                masterGain.connect(audioCtx.destination);
-            }
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+    function parseKgParts(inputStr) {
+        if (!inputStr) return { total: 0, parts: [] };
+        const clean = inputStr.replace(/,/g, '.').replace(/[^0-9+. ]/g, '');
+        const parts = clean.split('+').map(p => parseFloat(p.trim())).filter(p => !isNaN(p) && p > 0);
+        const total = parts.reduce((acc, curr) => acc + curr, 0);
+        return { total, parts };
     }
 
-    function triggerVisualizer() {
-        const bars = document.querySelectorAll('.v-bar');
-        bars.forEach(bar => {
-            if (isAudioPlaying) {
-                const h = Math.floor(Math.random() * 14) + 4;
-                bar.style.height = `${h}px`;
+    function bindEvents() {
+        // Mode Switch Toggle Logic
+        calcModeToggle.addEventListener('change', (e) => {
+            playClickSound();
+            if (e.target.checked) {
+                standardCalcView.classList.add('hidden');
+                kgCalcView.classList.remove('hidden');
             } else {
-                bar.style.height = '4px';
+                kgCalcView.classList.add('hidden');
+                standardCalcView.classList.remove('hidden');
             }
         });
+
+        // Keypad buttons
+        document.querySelector('.buttons').addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            playClickSound();
+            const val = btn.getAttribute('data-val');
+            const action = btn.getAttribute('data-action');
+
+            if (val !== null) appendCharacter(val);
+            else if (action === 'clear') { display.value = ''; livePreview.innerText = ''; }
+            else if (action === 'delete') deleteLastChar();
+            else if (action === 'calculate') calculateResult();
+        });
+
+        // Real-time Kg parts calculator
+        kgPartsInput.addEventListener('input', () => {
+            const { total } = parseKgParts(kgPartsInput.value);
+            kgTotalPreview.innerText = `${total.toFixed(2)} Kg`;
+        });
+
+        // Standard Calculator Save Action
+        document.getElementById('save-btn').addEventListener('click', () => {
+            saveStandardEntry();
+        });
+
+        // Kg Calculator Save Action
+        document.getElementById('save-kg-btn').addEventListener('click', () => {
+            saveKgEntry();
+        });
+
+        // History Modal Triggers
+        const openHistory = () => {
+            renderHistory();
+            savedModal.classList.remove('hidden');
+        };
+
+        document.getElementById('view-btn').addEventListener('click', openHistory);
+        document.getElementById('view-btn-kg').addEventListener('click', openHistory);
+
+        document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
+        document.getElementById('history-search').addEventListener('input', renderHistory);
+
+        document.getElementById('clear-all-btn').addEventListener('click', () => {
+            showConfirmDialog(
+                'සියල්ල මකා දැමීම', 
+                'Saved History එකෙහි ඇති සියලුම දත්ත මකා දැමීමට ඔබට විශ්වාසද?', 
+                () => {
+                    savedRecords = [];
+                    saveToStorage();
+                    renderHistory();
+                    showToast('History සාර්ථකව මකා දැමීය!', 'info');
+                }
+            );
+        });
+
+        // Edit Modal Actions
+        document.getElementById('close-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
+        document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
+
+        document.getElementById('save-edit-btn').addEventListener('click', () => {
+            if (!editingRecordId) return;
+            const newNote = document.getElementById('edit-note').value.trim();
+            const newExpr = document.getElementById('edit-expression').value.trim();
+            const newKg = parseFloat(document.getElementById('edit-kg').value) || 0;
+            const newKgParts = document.getElementById('edit-kg-parts').value.trim();
+
+            savedRecords = savedRecords.map(r => r.id === editingRecordId ? {
+                ...r,
+                note: newNote,
+                expression: newExpr,
+                kg: newKg,
+                kgParts: newKgParts
+            } : r);
+
+            saveToStorage();
+            editModal.classList.add('hidden');
+            renderHistory();
+            showToast('සංස්කරණය සාර්ථකයි!', 'success');
+        });
+
+        // Export Modal Triggers
+        const openExport = () => {
+            if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
+            document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
+            downloadModal.classList.remove('hidden');
+        };
+
+        document.getElementById('download-btn').addEventListener('click', openExport);
+        document.getElementById('download-btn-kg').addEventListener('click', openExport);
+
+        document.getElementById('close-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
+        document.getElementById('cancel-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
+
+        document.getElementById('confirm-download-btn').addEventListener('click', () => processExport(false));
+        document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
     }
 
-    function playNextMelodyStep() {
-        if (!isAudioPlaying) return;
+    function saveStandardEntry() {
+        let resultValStr = display.value.trim().replace(/,/g, '');
+        const note = calcNote.value.trim() || 'General Item';
 
-        initAudioContext();
-        if (!audioCtx) return;
+        if (!resultValStr || resultValStr === 'Error') {
+            showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
+            return;
+        }
 
-        const currentSong = songPlaylist[currentSongIndex];
-        const freq = currentSong.pattern[currentPatternIndex];
-        currentPatternIndex = (currentPatternIndex + 1) % currentSong.pattern.length;
+        const newValue = parseFloat(resultValStr);
+        if (isNaN(newValue)) {
+            showToast('ඇතුළත් කළ අගය නිවැරදි නැත!', 'error');
+            return;
+        }
 
-        try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+        const now = new Date();
+        const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const formattedTime = now.toLocaleTimeString();
 
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
 
-            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+        if (existingIndex !== -1) {
+            const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
+            const updatedVal = currentVal + newValue;
+            
+            savedRecords[existingIndex].expression = updatedVal.toString();
+            savedRecords[existingIndex].date = formattedDate;
+            savedRecords[existingIndex].time = formattedTime;
+            
+            showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`, 'info');
+        } else {
+            savedRecords.push({
+                id: Date.now(),
+                date: formattedDate,
+                time: formattedTime,
+                note: note,
+                expression: newValue.toString(),
+                kg: 0,
+                kgParts: ''
+            });
+            showToast('🎉 Data Saved Successfully!', 'success');
+        }
 
-            osc.connect(gain);
-            gain.connect(masterGain);
-
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-            triggerVisualizer();
-        } catch (e) {}
-
-        audioLoopTimer = setTimeout(playNextMelodyStep, currentSong.speed);
+        saveToStorage();
+        calcNote.value = '';
+        display.value = '';
+        livePreview.innerText = '';
     }
 
-    function startMusic() {
-        initAudioContext();
-        if (!isAudioPlaying) {
-            isAudioPlaying = true;
-            updatePlayerUI();
-            playNextMelodyStep();
+    function saveKgEntry() {
+        const name = kgItemName.value.trim() || 'Kg Item';
+        const partsRaw = kgPartsInput.value.trim();
+        const { total: kgAdded, parts } = parseKgParts(partsRaw);
+        const priceAdded = parseFloat(kgPriceInput.value) || 0;
+
+        if (kgAdded <= 0 && priceAdded <= 0) {
+            showToast('කරුණාකර Kg ප්‍රමාණයක් හෝ වටිනාකමක් ඇතුළත් කරන්න!', 'warning');
+            return;
+        }
+
+        const now = new Date();
+        const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        const formattedTime = now.toLocaleTimeString();
+
+        const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === name.toLowerCase());
+
+        if (existingIndex !== -1) {
+            const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
+            const currentKg = parseFloat(savedRecords[existingIndex].kg) || 0;
+            const existingParts = savedRecords[existingIndex].kgParts ? savedRecords[existingIndex].kgParts + ' + ' : '';
+
+            savedRecords[existingIndex].expression = (currentVal + priceAdded).toString();
+            savedRecords[existingIndex].kg = currentKg + kgAdded;
+            savedRecords[existingIndex].kgParts = existingParts + (parts.length > 0 ? parts.join('+') : `${kgAdded}`);
+            savedRecords[existingIndex].date = formattedDate;
+            savedRecords[existingIndex].time = formattedTime;
+
+            showToast(`⚖️ '${name}' සඳහා Kg ${kgAdded.toFixed(2)} එකතු විය! Total Kg: ${(currentKg + kgAdded).toFixed(2)}`, 'success');
+        } else {
+            savedRecords.push({
+                id: Date.now(),
+                date: formattedDate,
+                time: formattedTime,
+                note: name,
+                expression: priceAdded.toString(),
+                kg: kgAdded,
+                kgParts: parts.length > 0 ? parts.join('+') : (kgAdded > 0 ? `${kgAdded}` : '')
+            });
+            showToast('🎉 Kg දත්ත සාර්ථකව සුරකින ලදී!', 'success');
+        }
+
+        saveToStorage();
+        kgItemName.value = '';
+        kgPartsInput.value = '';
+        kgPriceInput.value = '';
+        kgTotalPreview.innerText = '0.00 Kg';
+    }
+
+    function renderHistory() {
+        savedList.innerHTML = '';
+        const searchTxt = document.getElementById('history-search').value.toLowerCase();
+
+        const filtered = savedRecords.filter(r => {
+            return r.note.toLowerCase().includes(searchTxt) || 
+                   String(r.expression).includes(searchTxt) ||
+                   String(r.kg).includes(searchTxt);
+        });
+
+        let totalValueSum = 0;
+        let totalKgSum = 0;
+
+        if (filtered.length === 0) {
+            savedList.innerHTML = '<p style="color:#888; text-align:center; padding:18px;">දත්ත කිසිවක් හමු නොවුණි.</p>';
+        } else {
+            filtered.slice().reverse().forEach(item => {
+                const valNum = parseFloat(item.expression) || 0;
+                const kgNum = parseFloat(item.kg) || 0;
+                totalValueSum += valNum;
+                totalKgSum += kgNum;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'saved-item-wrapper';
+                wrapper.innerHTML = `
+                    <div class="swipe-background swipe-bg-left">✏️ Edit (දකුණට)</div>
+                    <div class="swipe-background swipe-bg-right">🗑️ Delete (වමට)</div>
+                    <div class="saved-item" data-id="${item.id}">
+                        <div class="saved-item-header">
+                            <span class="saved-item-title">${escapeHTML(item.note)}</span>
+                            <span class="saved-item-date">${item.date} | ${item.time}</span>
+                        </div>
+                        <div class="saved-item-details">
+                            <div class="saved-badge-row">
+                                <span class="badge badge-value">💰 Rs. ${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                ${kgNum > 0 ? `<span class="badge badge-kg">⚖️ ${kgNum.toFixed(2)} Kg</span>` : ''}
+                            </div>
+                            ${item.kgParts ? `<div class="parts-detail">🧩 කොටස්: ${escapeHTML(item.kgParts)}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
+                savedList.appendChild(wrapper);
+            });
+        }
+
+        document.getElementById('history-total-val').innerText = `Rs. ${totalValueSum.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        document.getElementById('history-total-kg').innerText = `${totalKgSum.toFixed(2)} Kg`;
+    }
+
+    /* Direction-Aware Swipe Gesture Engine */
+    function setupSwipeGesture(element, item) {
+        let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
+
+        const start = (e) => { 
+            startX = e.touches ? e.touches[0].clientX : e.clientX; 
+            startY = e.touches ? e.touches[0].clientY : e.clientY;
+            isSwiping = true; 
+            isScrolling = false;
+            element.style.transition = 'none'; 
+        };
+
+        const move = (e) => {
+            if (!isSwiping) return;
+            
+            let touchX = e.touches ? e.touches[0].clientX : e.clientX;
+            let touchY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            currentX = touchX - startX;
+            currentY = touchY - startY;
+
+            if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
+                isScrolling = true;
+                element.style.transform = 'translateX(0)';
+                return;
+            }
+
+            if (isScrolling) return;
+
+            if (currentX > 110) currentX = 110;
+            if (currentX < -110) currentX = -110;
+            element.style.transform = `translateX(${currentX}px)`;
+        };
+
+        const end = () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            element.style.transition = 'transform 0.2s ease-out';
+
+            if (!isScrolling) {
+                // Swipe Right -> Edit Modal
+                if (currentX > 55) {
+                    element.style.transform = 'translateX(0)';
+                    editingRecordId = item.id;
+                    document.getElementById('edit-note').value = item.note || '';
+                    document.getElementById('edit-expression').value = item.expression || '0';
+                    document.getElementById('edit-kg').value = item.kg || 0;
+                    document.getElementById('edit-kg-parts').value = item.kgParts || '';
+                    editModal.classList.remove('hidden');
+                } 
+                // Swipe Left -> Delete
+                else if (currentX < -55) {
+                    element.style.transform = 'translateX(0)';
+                    showConfirmDialog(
+                        'මකා දැමීම', 
+                        `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
+                        () => {
+                            savedRecords = savedRecords.filter(r => r.id !== item.id);
+                            saveToStorage(); 
+                            renderHistory();
+                            showToast('දත්තය මකා දමන ලදී!', 'info');
+                        }
+                    );
+                } else {
+                    element.style.transform = 'translateX(0)';
+                }
+            }
+            currentX = 0; currentY = 0;
+        };
+
+        if ('ontouchstart' in window) {
+            element.addEventListener('touchstart', start, {passive:true});
+            element.addEventListener('touchmove', move, {passive:true});
+            element.addEventListener('touchend', end);
+        } else {
+            element.addEventListener('mousedown', start);
+            element.addEventListener('mousemove', (e) => isSwiping && move(e));
+            element.addEventListener('mouseup', end);
         }
     }
 
-    function stopMusic() {
-        isAudioPlaying = false;
-        if (audioLoopTimer) clearTimeout(audioLoopTimer);
-        triggerVisualizer();
-        updatePlayerUI();
+    function generateExportHTML(title) {
+        let totalSum = 0;
+        let totalKg = 0;
+
+        const rows = savedRecords.map((r, index) => {
+            const valNum = parseFloat(r.expression) || 0;
+            const kgNum = parseFloat(r.kg) || 0;
+            totalSum += valNum;
+            totalKg += kgNum;
+
+            return `
+                <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 12px;">${r.date} <br><span style="color:#9ca3af; font-size:10px;">${r.time}</span></td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 13px;">${escapeHTML(r.note)}</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #0284c7; font-weight: 600; font-size: 12px;">${kgNum.toFixed(2)} Kg <br><span style="color:#64748b; font-size:10px;">${escapeHTML(r.kgParts || '-')}</span></td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 14px; text-align: right;">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 800px; margin: auto; background: #ffffff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR & KG STATEMENT</h1>
+                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Detailed Summary & Kg Parts Breakdown</p>
+                    </div>
+                    <div style="text-align: right; color: #6b7280; font-size: 12px;">
+                        <div>Date: ${new Date().toLocaleDateString()}</div>
+                        <div>Total Records: ${savedRecords.length}</div>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Date/Time</th>
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Description</th>
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Weight (Kg) & Parts</th>
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600; text-align: right;">Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+
+                <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 30px;">
+                    <div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 10px 16px; border-radius: 8px; text-align: right;">
+                        <span style="font-size: 12px; color: #15803d; font-weight: 600; display: block;">TOTAL WEIGHT</span>
+                        <span style="font-size: 18px; color: #166534; font-weight: 800;">${totalKg.toFixed(2)} Kg</span>
+                    </div>
+                    <div style="background: #fff7ed; border: 1px solid #ff9800; padding: 10px 16px; border-radius: 8px; text-align: right;">
+                        <span style="font-size: 12px; color: #c2410c; font-weight: 600; display: block;">GRAND TOTAL</span>
+                        <span style="font-size: 18px; color: #9a3412; font-weight: 800;">Rs. ${totalSum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">
+                        Application created by Yomal Lakshan
+                    </p>
+                </div>
+            </div>
+        `;
     }
 
-    function updatePlayerUI() {
-        const songTitleElem = document.getElementById('player-song-title');
-        const playBtn = document.getElementById('player-play-btn');
-        if (songTitleElem) songTitleElem.innerText = songPlaylist[currentSongIndex].title;
-        if (playBtn) playBtn.innerText = isAudioPlaying ? '⏸️' : '▶️';
+    async function processExport(isShare = false) {
+        const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
+        const format = document.getElementById('export-format').value;
+
+        let contentBlob = null;
+        let mimeType = 'text/plain';
+        let extension = format;
+
+        if (format === 'pdf' && window.html2pdf) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = generateExportHTML(fname);
+
+            const opt = { 
+                margin: 6, 
+                filename: `${fname}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            if (isShare) {
+                const pdfWorker = html2pdf().set(opt).from(tempDiv);
+                contentBlob = await pdfWorker.output('blob');
+                mimeType = 'application/pdf';
+            } else {
+                html2pdf().set(opt).from(tempDiv).save();
+                downloadModal.classList.add('hidden');
+                showToast('📥 PDF Download සාර්ථකයි!', 'success');
+                return;
+            }
+        } else if (format === 'html' || format === 'xml') {
+            mimeType = format === 'html' ? 'text/html' : 'text/xml';
+            let content = '';
+            if (format === 'html') {
+                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
+            } else {
+                content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
+                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><kg>${r.kg}</kg><kgParts>${escapeHTML(r.kgParts)}</kgParts><value>${r.expression}</value></record>`).join('') +
+                    `</records>`;
+            }
+            contentBlob = new Blob([content], { type: mimeType });
+        } else {
+            mimeType = 'application/msword';
+            extension = 'doc';
+            let text = `WM CALCULATOR & KG REPORT\n\n` + 
+                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression} LKR | Kg: ${r.kg} (${r.kgParts})`).join('\n') +
+                `\n\n----------------------------------------\nApplication created by Yomal Lakshan`;
+            contentBlob = new Blob([text], { type: 'text/plain' });
+        }
+
+        if (isShare) {
+            const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator Statement' });
+                    showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
+                } catch (err) {
+                    if (err.name !== 'AbortError') downloadBlob(contentBlob, `${fname}.${extension}`);
+                }
+            } else {
+                downloadBlob(contentBlob, `${fname}.${extension}`);
+            }
+        } else {
+            downloadBlob(contentBlob, `${fname}.${extension}`);
+        }
+
+        downloadModal.classList.add('hidden');
+    }
+
+    function downloadBlob(blob, filename) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        showToast('📥 Download Completed!', 'success');
+    }
+
+    function appendCharacter(char) {
+        if (display.value === 'Error') display.value = '';
+        display.value += char;
+        updateLivePreview();
+    }
+
+    function deleteLastChar() {
+        display.value = display.value.slice(0, -1);
+        updateLivePreview();
+    }
+
+    function updateLivePreview() {
+        const val = display.value.trim();
+        if (!val) { livePreview.innerText = ''; return; }
+        try {
+            const expr = val.replace(/×/g, '*').replace(/÷/g, '/');
+            if (/^[0-9+\-*/. ]+$/.test(expr)) {
+                const res = Function(`'use strict'; return (${expr})`)();
+                if (isFinite(res)) {
+                    livePreview.innerText = '= ' + Number(res).toLocaleString('en-US');
+                } else livePreview.innerText = '';
+            } else livePreview.innerText = '';
+        } catch (e) {
+            livePreview.innerText = '';
+        }
+    }
+
+    function calculateResult() {
+        if (!display.value.trim()) return;
+        try {
+            const expr = display.value.replace(/×/g, '*').replace(/÷/g, '/');
+            const res = Function(`'use strict'; return (${expr})`)();
+            if (isFinite(res)) {
+                const rounded = Math.round(res * 1e10) / 1e10;
+                display.value = rounded.toLocaleString('en-US');
+                livePreview.innerText = '';
+            } else display.value = 'Error';
+        } catch {
+            display.value = 'Error';
+        }
+    }
+
+    function exportBackupJSON() {
+        const blob = new Blob([JSON.stringify(savedRecords, null, 2)], { type: 'application/json' });
+        downloadBlob(blob, `wm_calc_backup_${Date.now()}.json`);
+    }
+
+    function importBackupJSON(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = JSON.parse(event.target.result);
+                if (Array.isArray(data)) {
+                    savedRecords = data;
+                    saveToStorage();
+                    showToast('🎉 Backup Restored Successfully!', 'success');
+                    renderHistory();
+                }
+            } catch (err) {
+                showToast('Invalid Backup File!', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function setupSearchableSuggestions() {
+        function showSuggestions(inputElem, boxElem) {
+            const text = inputElem.value;
+            const unique = [...new Set(savedRecords.map(i => i.note))].filter(n => n && n.toLowerCase().includes(text.toLowerCase()));
+            boxElem.innerHTML = '';
+            if (!unique.length) { boxElem.classList.add('hidden'); return; }
+            unique.forEach(n => {
+                const d = document.createElement('div');
+                d.className = 'suggestion-item'; d.innerText = n;
+                d.addEventListener('click', () => { 
+                    inputElem.value = n; 
+                    boxElem.classList.add('hidden'); 
+                });
+                boxElem.appendChild(d);
+            });
+            boxElem.classList.remove('hidden');
+        }
+
+        const sugg1 = document.getElementById('custom-suggestions');
+        const sugg2 = document.getElementById('kg-suggestions');
+        
+        calcNote.addEventListener('focus', () => showSuggestions(calcNote, sugg1));
+        calcNote.addEventListener('input', () => showSuggestions(calcNote, sugg1));
+
+        kgItemName.addEventListener('focus', () => showSuggestions(kgItemName, sugg2));
+        kgItemName.addEventListener('input', () => showSuggestions(kgItemName, sugg2));
+
+        document.addEventListener('click', (e) => {
+            if (!calcNote.contains(e.target) && !sugg1.contains(e.target)) sugg1.classList.add('hidden');
+            if (!kgItemName.contains(e.target) && !sugg2.contains(e.target)) sugg2.classList.add('hidden');
+        });
     }
 
     function setupSettings() {
@@ -271,441 +788,88 @@
         document.getElementById('current-time').innerText = now.toLocaleTimeString();
     }
 
-    function bindEvents() {
-        document.querySelector('.buttons').addEventListener('click', (e) => {
-            const btn = e.target.closest('button');
-            if (!btn) return;
-
-            playClickSound();
-            const val = btn.getAttribute('data-val');
-            const action = btn.getAttribute('data-action');
-
-            if (val !== null) appendCharacter(val);
-            else if (action === 'clear') { display.value = ''; livePreview.innerText = ''; }
-            else if (action === 'delete') deleteLastChar();
-            else if (action === 'calculate') calculateResult();
-        });
-
-        // Save Record Functionality
-        document.getElementById('save-btn').addEventListener('click', () => {
-            let resultValStr = display.value.trim().replace(/,/g, '');
-            const note = calcNote.value.trim() || 'General Calculation';
-
-            if (!resultValStr || resultValStr === 'Error') {
-                showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
-                return;
+    function initAudioContext() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                audioCtx = new AudioContextClass();
+                masterGain = audioCtx.createGain();
+                const vol = parseFloat(document.getElementById('player-volume').value) || 0.5;
+                masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                masterGain.connect(audioCtx.destination);
             }
-
-            const newValue = parseFloat(resultValStr);
-            if (isNaN(newValue)) {
-                showToast('ඇතුළත් කළ අගය නිවැරදි නැත!', 'error');
-                return;
-            }
-
-            const now = new Date();
-            const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-            const formattedTime = now.toLocaleTimeString();
-
-            const record = {
-                id: Date.now(),
-                date: formattedDate,
-                time: formattedTime,
-                note: note,
-                expression: newValue.toString()
-            };
-
-            savedRecords.push(record);
-            saveToStorage();
-            
-            showToast('🎉 Data Saved Successfully!', 'success');
-
-            calcNote.value = '';
-            display.value = '';
-            livePreview.innerText = '';
-        });
-
-        document.getElementById('view-btn').addEventListener('click', () => {
-            renderHistory();
-            savedModal.classList.remove('hidden');
-        });
-
-        document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
-        
-        const searchInput = document.getElementById('history-search');
-        const clearSearchBtn = document.getElementById('clear-search-btn');
-
-        searchInput.addEventListener('input', () => {
-            if (searchInput.value.trim().length > 0) {
-                clearSearchBtn.classList.remove('hidden');
-            } else {
-                clearSearchBtn.classList.add('hidden');
-            }
-            renderHistory();
-        });
-
-        clearSearchBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            clearSearchBtn.classList.add('hidden');
-            renderHistory();
-        });
-
-        document.getElementById('clear-all-btn').addEventListener('click', () => {
-            if (savedRecords.length === 0) {
-                showToast('මකා දැමීමට දත්ත නොමැත!', 'info');
-                return;
-            }
-            showConfirmDialog(
-                'සියල්ල මකා දැමීම', 
-                'Saved History එකෙහි ඇති සියලුම දත්ත මකා දැමීමට ඔබට විශ්වාසද?', 
-                () => {
-                    savedRecords = [];
-                    saveToStorage();
-                    renderHistory();
-                    showToast('History සාර්ථකව මකා දැමීය!', 'info');
-                }
-            );
-        });
-
-        document.getElementById('close-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
-        document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
-
-        document.getElementById('save-edit-btn').addEventListener('click', () => {
-            if (!editingRecordId) return;
-            const newNote = document.getElementById('edit-note').value.trim();
-            const newExpr = document.getElementById('edit-expression').value.trim().replace(/,/g, '');
-
-            if (isNaN(parseFloat(newExpr))) {
-                showToast('නිවැරදි අගයක් ඇතුළත් කරන්න!', 'error');
-                return;
-            }
-
-            savedRecords = savedRecords.map(r => r.id === editingRecordId ? { ...r, note: newNote || 'Untitled', expression: newExpr } : r);
-            saveToStorage();
-            editModal.classList.add('hidden');
-            renderHistory();
-            showToast('සංස්කරණය සාර්ථකයි!', 'success');
-        });
-
-        document.getElementById('download-btn').addEventListener('click', () => {
-            if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
-            document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
-            downloadModal.classList.remove('hidden');
-        });
-
-        document.getElementById('close-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
-        document.getElementById('cancel-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
-
-        document.getElementById('confirm-download-btn').addEventListener('click', () => processExport(false));
-        document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
-    }
-
-    function generateExportHTML(title) {
-        let totalSum = 0;
-        const rows = savedRecords.map((r, index) => {
-            const valNum = parseFloat(r.expression) || 0;
-            totalSum += valNum;
-            return `
-                <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">${r.date} <br><span style="color:#9ca3af; font-size:11px;">${r.time}</span></td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 14px;">${escapeHTML(r.note)}</td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 15px; text-align: right;">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                </tr>
-            `;
-        }).join('');
-
-        return `
-            <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 750px; margin: auto; background: #ffffff;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
-                    <div>
-                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR PRO</h1>
-                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Calculation Statement & History Report</p>
-                    </div>
-                    <div style="text-align: right; color: #6b7280; font-size: 12px;">
-                        <div>Date: ${new Date().toLocaleDateString()}</div>
-                        <div>Total Items: ${savedRecords.length}</div>
-                    </div>
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                    <thead>
-                        <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Date & Time</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (Note)</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-                    <div style="background: #fff7ed; border: 1px solid #ff9800; padding: 12px 20px; border-radius: 8px; text-align: right; min-width: 220px;">
-                        <span style="font-size: 13px; color: #c2410c; font-weight: 600; display: block;">GRAND TOTAL</span>
-                        <span style="font-size: 22px; color: #9a3412; font-weight: 800;">${totalSum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                    </div>
-                </div>
-
-                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px;">
-                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">
-                        Application created by Yomal Lakshan
-                    </p>
-                </div>
-            </div>
-        `;
-    }
-
-    async function processExport(isShare = false) {
-        const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
-        const format = document.getElementById('export-format').value;
-
-        let contentBlob = null;
-        let mimeType = 'text/plain';
-        let extension = format;
-
-        if (format === 'pdf' && window.html2pdf) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = generateExportHTML(fname);
-
-            const opt = { 
-                margin: 8, 
-                filename: `${fname}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            
-            if (isShare) {
-                const pdfWorker = html2pdf().set(opt).from(tempDiv);
-                contentBlob = await pdfWorker.output('blob');
-                mimeType = 'application/pdf';
-            } else {
-                html2pdf().set(opt).from(tempDiv).save();
-                downloadModal.classList.add('hidden');
-                showToast('📥 PDF Download සාර්ථකයි!', 'success');
-                return;
-            }
-        } else if (format === 'html' || format === 'xml') {
-            mimeType = format === 'html' ? 'text/html' : 'text/xml';
-            let content = '';
-            if (format === 'html') {
-                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
-            } else {
-                content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
-                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><value>${r.expression}</value></record>`).join('') +
-                    `</records>`;
-            }
-            contentBlob = new Blob([content], { type: mimeType });
-        } else {
-            mimeType = 'application/msword';
-            extension = 'doc';
-            let text = `WM CALCULATOR REPORT\n\n` + 
-                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression}`).join('\n') +
-                `\n\n----------------------------------------\nApplication created by Yomal Lakshan`;
-            contentBlob = new Blob([text], { type: 'text/plain' });
         }
-
-        if (isShare) {
-            const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator History Report' });
-                    showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
-                } catch (err) {
-                    if (err.name !== 'AbortError') downloadBlob(contentBlob, `${fname}.${extension}`);
-                }
-            } else {
-                downloadBlob(contentBlob, `${fname}.${extension}`);
-            }
-        } else {
-            downloadBlob(contentBlob, `${fname}.${extension}`);
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
         }
-
-        downloadModal.classList.add('hidden');
     }
 
-    function downloadBlob(blob, filename) {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        a.click();
-        showToast('📥 Download Completed!', 'success');
+    function triggerVisualizer() {
+        const bars = document.querySelectorAll('.v-bar');
+        bars.forEach(bar => {
+            if (isAudioPlaying) {
+                const h = Math.floor(Math.random() * 14) + 4;
+                bar.style.height = `${h}px`;
+            } else {
+                bar.style.height = '4px';
+            }
+        });
     }
 
-    function appendCharacter(char) {
-        if (display.value === 'Error') display.value = '';
-        display.value += char;
-        updateLivePreview();
-    }
+    function playNextMelodyStep() {
+        if (!isAudioPlaying) return;
+        initAudioContext();
+        if (!audioCtx) return;
 
-    function deleteLastChar() {
-        display.value = display.value.slice(0, -1);
-        updateLivePreview();
-    }
+        const currentSong = songPlaylist[currentSongIndex];
+        const freq = currentSong.pattern[currentPatternIndex];
+        currentPatternIndex = (currentPatternIndex + 1) % currentSong.pattern.length;
 
-    function updateLivePreview() {
-        const val = display.value.trim().replace(/,/g, '');
-        if (!val) { livePreview.innerText = ''; return; }
         try {
-            const expr = val.replace(/×/g, '*').replace(/÷/g, '/');
-            if (/^[0-9+\-*/. ]+$/.test(expr)) {
-                const res = Function(`'use strict'; return (${expr})`)();
-                if (isFinite(res)) {
-                    livePreview.innerText = '= ' + Number(res).toLocaleString('en-US');
-                } else livePreview.innerText = '';
-            } else livePreview.innerText = '';
-        } catch (e) {
-            livePreview.innerText = '';
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+            triggerVisualizer();
+        } catch (e) {}
+
+        audioLoopTimer = setTimeout(playNextMelodyStep, currentSong.speed);
+    }
+
+    function startMusic() {
+        initAudioContext();
+        if (!isAudioPlaying) {
+            isAudioPlaying = true;
+            updatePlayerUI();
+            playNextMelodyStep();
         }
     }
 
-    function calculateResult() {
-        const val = display.value.trim().replace(/,/g, '');
-        if (!val) return;
-        try {
-            const expr = val.replace(/×/g, '*').replace(/÷/g, '/');
-            const res = Function(`'use strict'; return (${expr})`)();
-            if (isFinite(res)) {
-                const rounded = Math.round(res * 1e10) / 1e10;
-                display.value = rounded.toLocaleString('en-US');
-                livePreview.innerText = '';
-            } else display.value = 'Error';
-        } catch {
-            display.value = 'Error';
-        }
+    function stopMusic() {
+        isAudioPlaying = false;
+        if (audioLoopTimer) clearTimeout(audioLoopTimer);
+        triggerVisualizer();
+        updatePlayerUI();
     }
 
-    /* Render Saved History with Professional Card Design */
-    function renderHistory() {
-        savedList.innerHTML = '';
-        const searchTxt = document.getElementById('history-search').value.toLowerCase().trim();
-
-        const filtered = savedRecords.filter(r => {
-            return r.note.toLowerCase().includes(searchTxt) || String(r.expression).includes(searchTxt);
-        });
-
-        // Update History Badge Count
-        const badgeElem = document.getElementById('history-count-badge');
-        if (badgeElem) badgeElem.innerText = filtered.length;
-
-        let totalSum = 0;
-
-        if (filtered.length === 0) {
-            savedList.innerHTML = `
-                <div class="history-empty-state">
-                    <div class="empty-icon">📂</div>
-                    <p>${searchTxt ? 'සෙවුමට ගැලපෙන දත්ත කිසිවක් හමු නොවුණි.' : 'තවම සුරකින ලද දත්ත නොමැත.'}</p>
-                </div>
-            `;
-        } else {
-            filtered.slice().reverse().forEach(item => {
-                const valNum = parseFloat(item.expression) || 0;
-                totalSum += valNum;
-
-                const card = document.createElement('div');
-                card.className = 'history-card';
-                card.innerHTML = `
-                    <div class="history-card-header">
-                        <span class="history-item-note">${escapeHTML(item.note)}</span>
-                        <span class="history-item-time">📅 ${item.date} | 🕒 ${item.time}</span>
-                    </div>
-                    <div class="history-card-body">
-                        <span class="history-item-label">අගය (Amount):</span>
-                        <span class="history-item-value">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                    </div>
-                    <div class="history-card-actions">
-                        <button class="card-action-btn copy-btn" data-id="${item.id}" title="Calculator එකට යොදන්න">📋 Use</button>
-                        <button class="card-action-btn edit-btn" data-id="${item.id}">✏️ Edit</button>
-                        <button class="card-action-btn delete-btn" data-id="${item.id}">🗑️ Delete</button>
-                    </div>
-                `;
-
-                // Button Event Listeners inside Card
-                card.querySelector('.copy-btn').addEventListener('click', () => {
-                    display.value = valNum.toLocaleString('en-US');
-                    savedModal.classList.add('hidden');
-                    showToast('අගය Calculator එකට එකතු කරන ලදී!', 'info');
-                });
-
-                card.querySelector('.edit-btn').addEventListener('click', () => {
-                    editingRecordId = item.id;
-                    document.getElementById('edit-note').value = item.note;
-                    document.getElementById('edit-expression').value = item.expression;
-                    editModal.classList.remove('hidden');
-                });
-
-                card.querySelector('.delete-btn').addEventListener('click', () => {
-                    showConfirmDialog(
-                        'මකා දැමීම', 
-                        `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
-                        () => {
-                            savedRecords = savedRecords.filter(r => r.id !== item.id);
-                            saveToStorage(); 
-                            renderHistory();
-                            showToast('දත්තය මකා දමන ලදී!', 'info');
-                        }
-                    );
-                });
-
-                savedList.appendChild(card);
-            });
-        }
-
-        document.getElementById('history-total-val').innerText = totalSum.toLocaleString('en-US', { minimumFractionDigits: 2 });
-    }
-
-    function exportBackupJSON() {
-        const blob = new Blob([JSON.stringify(savedRecords, null, 2)], { type: 'application/json' });
-        downloadBlob(blob, `wm_calc_backup_${Date.now()}.json`);
-    }
-
-    function importBackupJSON(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const data = JSON.parse(event.target.result);
-                if (Array.isArray(data)) {
-                    savedRecords = data;
-                    saveToStorage();
-                    showToast('🎉 Backup Restored Successfully!', 'success');
-                    renderHistory();
-                }
-            } catch (err) {
-                showToast('Invalid Backup File!', 'error');
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    function setupSearchableSuggestions() {
-        function showSuggestions(text) {
-            const unique = [...new Set(savedRecords.map(i => i.note))].filter(n => n && n.toLowerCase().includes(text.toLowerCase()));
-            suggestionsBox.innerHTML = '';
-            if (!unique.length) { suggestionsBox.classList.add('hidden'); return; }
-            unique.forEach(n => {
-                const d = document.createElement('div');
-                d.className = 'suggestion-item'; d.innerText = n;
-                d.addEventListener('click', () => { 
-                    calcNote.value = n; 
-                    suggestionsBox.classList.add('hidden'); 
-                });
-                suggestionsBox.appendChild(d);
-            });
-            suggestionsBox.classList.remove('hidden');
-        }
-        
-        calcNote.addEventListener('focus', () => showSuggestions(calcNote.value));
-        calcNote.addEventListener('input', () => showSuggestions(calcNote.value));
-
-        document.addEventListener('click', (e) => {
-            if (!calcNote.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                suggestionsBox.classList.add('hidden');
-            }
-        });
+    function updatePlayerUI() {
+        const songTitleElem = document.getElementById('player-song-title');
+        const playBtn = document.getElementById('player-play-btn');
+        if (songTitleElem) songTitleElem.innerText = songPlaylist[currentSongIndex].title;
+        if (playBtn) playBtn.innerText = isAudioPlaying ? '⏸️' : '▶️';
     }
 
     function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords)); }
-    function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
+    function escapeHTML(str) { return String(str || '').replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
 })();
