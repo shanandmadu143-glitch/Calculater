@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="theme-dark">
-    <!-- Animated Toast Notification Container -->
+    <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
     <div class="calculator-container">
@@ -30,7 +30,7 @@
 
         <!-- Note Input Area -->
         <div class="input-container">
-            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." autocomplete="off">
+            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව, පඩි...)" autocomplete="off">
             <div id="custom-suggestions" class="suggestions-box hidden"></div>
         </div>
 
@@ -68,26 +68,39 @@
         </div>
     </div>
 
-    <!-- History Modal -->
+    <!-- Saved History Modal -->
     <div id="saved-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content history-modal-content">
             <div class="modal-header">
-                <h3>Saved History</h3>
-                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
+                <div class="modal-title-group">
+                    <h3>📜 Saved History</h3>
+                    <span id="history-count-badge" class="count-badge">0</span>
+                </div>
+                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️ මකන්න</button>
             </div>
 
             <div class="history-controls">
-                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
+                <div class="search-input-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="history-search" placeholder="සෙවුම (Search note or amount)...">
+                    <button id="clear-search-btn" class="clear-search-btn hidden">&times;</button>
+                </div>
             </div>
 
+            <!-- Saved History List -->
             <div id="saved-list" class="saved-list"></div>
 
-            <div class="history-total-box">
-                <span>මුළු එකතුව (Total):</span>
-                <span id="history-total-val">0.00</span>
+            <!-- Total Analytics Box -->
+            <div class="history-summary-card">
+                <div class="summary-item">
+                    <span class="summary-label">මුළු එකතුව (Total):</span>
+                    <span id="history-total-val" class="summary-value">0.00</span>
+                </div>
             </div>
 
-            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ Close</button>
+            <div class="modal-footer-actions">
+                <button id="close-modal-btn" class="close-btn">✖️ වසා දමන්න (Close)</button>
+            </div>
         </div>
     </div>
 
@@ -95,17 +108,17 @@
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>සංස්කරණය (Edit)</h3>
+                <h3>✏️ සංස්කරණය (Edit Record)</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label for="edit-note">විස්තරය / Note:</label>
+                <label for="edit-note">විස්තරය / Description:</label>
                 <input type="text" id="edit-note">
                 <label for="edit-expression">අගය / Value:</label>
                 <input type="text" id="edit-expression">
                 <div class="modal-actions icon-actions">
-                    <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾 Save</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️ Cancel</button>
+                    <button id="save-edit-btn" class="action-btn save" title="Save Changes">💾 සුරකින්න</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel" title="Cancel">✖️ අවලංගුයි</button>
                 </div>
             </div>
         </div>
@@ -115,7 +128,7 @@
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Export & Share</h3>
+                <h3>📥 Export & Share</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
@@ -204,4 +217,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
