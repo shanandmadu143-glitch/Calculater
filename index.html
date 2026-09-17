@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WM Calculator Pro & Kg Manager</title>
+    <title>WM Calculator Pro</title>
     <link rel="stylesheet" href="style.css">
     <!-- PDF Export Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -22,120 +22,69 @@
             <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">⚙️</button>
         </div>
 
-        <!-- Mode Toggle Switch Bar -->
-        <div class="mode-switch-card">
-            <span class="mode-label">🔢 Standard Calc</span>
-            <label class="switch">
-                <input type="checkbox" id="calc-mode-toggle">
-                <span class="slider round"></span>
-            </label>
-            <span class="mode-label highlight">⚖️ Kg Calc</span>
+        <!-- Display Screen -->
+        <div class="display-container">
+            <div id="live-preview" class="live-preview"></div>
+            <input type="text" id="display" readonly placeholder="0">
         </div>
 
-        <!-- View 1: Standard Calculator Screen & Keypad -->
-        <div id="standard-calc-view" class="calc-view">
-            <!-- Display Screen -->
-            <div class="display-container">
-                <div id="live-preview" class="live-preview"></div>
-                <input type="text" id="display" readonly placeholder="0">
-            </div>
-
-            <!-- Note Input Area -->
-            <div class="input-container">
-                <input type="text" id="calc-note" placeholder="විස්තරය / නම (උදා: සීනි / පරිප්පු)..." autocomplete="off">
-                <div id="custom-suggestions" class="suggestions-box hidden"></div>
-            </div>
-
-            <!-- Primary Action Buttons -->
-            <div class="action-bar-grid">
-                <button id="save-btn" class="action-btn save" title="දත්ත සුරකින්න">💾 Save</button>
-                <button id="view-btn" class="action-btn view icon-only" title="History බලන්න">📜</button>
-                <button id="download-btn" class="action-btn export icon-only" title="Export / Share">📥</button>
-            </div>
-
-            <!-- Keypad Grid -->
-            <div class="buttons">
-                <button data-action="clear" class="btn btn-cmd">C</button>
-                <button data-action="delete" class="btn btn-cmd">⌫</button>
-                <button data-val="/" class="btn btn-op">÷</button>
-                <button data-val="*" class="btn btn-op">×</button>
-
-                <button data-val="7" class="btn">7</button>
-                <button data-val="8" class="btn">8</button>
-                <button data-val="9" class="btn">9</button>
-                <button data-val="-" class="btn btn-op">-</button>
-
-                <button data-val="4" class="btn">4</button>
-                <button data-val="5" class="btn">5</button>
-                <button data-val="6" class="btn">6</button>
-                <button data-val="+" class="btn btn-op">+</button>
-
-                <button data-val="1" class="btn">1</button>
-                <button data-val="2" class="btn">2</button>
-                <button data-val="3" class="btn">3</button>
-                <button data-action="calculate" class="btn btn-equal font-lg">=</button>
-
-                <button data-val="0" class="btn btn-zero">0</button>
-                <button data-val="." class="btn">.</button>
-            </div>
+        <!-- Note Input Area -->
+        <div class="input-container">
+            <input type="text" id="calc-note" placeholder="විස්තරය (උදා: බඩු ලැයිස්තුව)..." autocomplete="off">
+            <div id="custom-suggestions" class="suggestions-box hidden"></div>
         </div>
 
-        <!-- View 2: Kg Calculator Screen & Inputs -->
-        <div id="kg-calc-view" class="calc-view hidden">
-            <div class="kg-card-body">
-                <div class="input-group">
-                    <label>📝 භාණ්ඩයේ නම / විස්තරය:</label>
-                    <input type="text" id="kg-item-name" placeholder="උදා: බාස්මතී සහල්..." autocomplete="off">
-                    <div id="kg-suggestions" class="suggestions-box hidden"></div>
-                </div>
+        <!-- Primary Action Buttons -->
+        <div class="action-bar-grid">
+            <button id="save-btn" class="action-btn save" title="දත්ත සුරකින්න">💾 Save</button>
+            <button id="view-btn" class="action-btn view icon-only" title="History බලන්න">📜</button>
+            <button id="download-btn" class="action-btn export icon-only" title="Export / Share">📥</button>
+        </div>
 
-                <div class="input-group">
-                    <label>⚖️ Kg සෑදෙන කොටස් (උදා: 10+12.5+5.25):</label>
-                    <input type="text" id="kg-parts-input" placeholder="5 + 10 + 2.5">
-                </div>
+        <!-- Keypad Grid -->
+        <div class="buttons">
+            <button data-action="clear" class="btn btn-cmd">C</button>
+            <button data-action="delete" class="btn btn-cmd">⌫</button>
+            <button data-val="/" class="btn btn-op">÷</button>
+            <button data-val="*" class="btn btn-op">×</button>
 
-                <div class="kg-result-badge">
-                    <span>එකතු වූ මුළු Kg ගණන:</span>
-                    <strong id="kg-total-preview">0.00 Kg</strong>
-                </div>
+            <button data-val="7" class="btn">7</button>
+            <button data-val="8" class="btn">8</button>
+            <button data-val="9" class="btn">9</button>
+            <button data-val="-" class="btn btn-op">-</button>
 
-                <div class="input-group margin-top-10">
-                    <label>💰 අදාල මුළු ගණන / වටිනාකම (රු.):</label>
-                    <input type="number" id="kg-price-input" placeholder="0.00" step="any">
-                </div>
+            <button data-val="4" class="btn">4</button>
+            <button data-val="5" class="btn">5</button>
+            <button data-val="6" class="btn">6</button>
+            <button data-val="+" class="btn btn-op">+</button>
 
-                <div class="action-bar-grid margin-top-15">
-                    <button id="save-kg-btn" class="action-btn save">💾 Kg දත්ත එකතු කරන්න</button>
-                    <button id="view-btn-kg" class="action-btn view icon-only" title="History බලන්න">📜</button>
-                    <button id="download-btn-kg" class="action-btn export icon-only" title="Export / Share">📥</button>
-                </div>
-            </div>
+            <button data-val="1" class="btn">1</button>
+            <button data-val="2" class="btn">2</button>
+            <button data-val="3" class="btn">3</button>
+            <button data-action="calculate" class="btn btn-equal font-lg">=</button>
+
+            <button data-val="0" class="btn btn-zero">0</button>
+            <button data-val="." class="btn">.</button>
         </div>
     </div>
 
-    <!-- Saved History Modal -->
+    <!-- History Modal -->
     <div id="saved-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📜 Saved History Report</h3>
+                <h3>Saved History</h3>
                 <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
             </div>
 
             <div class="history-controls">
-                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search Name or Kg)...">
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
             </div>
 
             <div id="saved-list" class="saved-list"></div>
 
-            <div class="history-summary-box">
-                <div class="summary-line">
-                    <span>මුළු වටිනාකම (Total Value):</span>
-                    <strong id="history-total-val">Rs. 0.00</strong>
-                </div>
-                <div class="summary-line highlight-kg">
-                    <span>මුළු Kg ප්‍රමාණය (Total Weight):</span>
-                    <strong id="history-total-kg">0.00 Kg</strong>
-                </div>
+            <div class="history-total-box">
+                <span>මුළු එකතුව (Total):</span>
+                <span id="history-total-val">0.00</span>
             </div>
 
             <button id="close-modal-btn" class="close-btn margin-top-10">✖️ Close</button>
@@ -146,25 +95,28 @@
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✏️ සංස්කරණය (Edit Item)</h3>
+                <h3>සංස්කරණය (Edit)</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label for="edit-note">විස්තරය / නම:</label>
+                <label for="edit-note">විස්තරය / Note:</label>
                 <input type="text" id="edit-note">
                 
-                <label for="edit-expression">වටිනාකම / ගණන (රු.):</label>
+                <label for="edit-expression">ප්‍රධාන අගය / Primary Value:</label>
                 <input type="text" id="edit-expression">
 
-                <label for="edit-kg">Kg ගණන:</label>
-                <input type="number" id="edit-kg" step="any">
+                <hr class="form-divider">
+                <span class="section-subtitle">➕ අලුතින් එකතු කිරීම (Addition)</span>
 
-                <label for="edit-kg-parts">Kg සෑදුනු කොටස්:</label>
-                <input type="text" id="edit-kg-parts" placeholder="10+5+2.5">
+                <label for="edit-added-kg">අලුතින් එකතු කරන බර (kg වලින්):</label>
+                <input type="number" id="edit-added-kg" step="any" placeholder="උදා: 10.5">
+
+                <label for="edit-added-pieces">කෑලි ගණන (Pieces):</label>
+                <input type="number" id="edit-added-pieces" placeholder="උදා: 5">
 
                 <div class="modal-actions icon-actions">
-                    <button id="save-edit-btn" class="action-btn save">💾 Save Changes</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel icon-only">✖️ Cancel</button>
+                    <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾 Save</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️ Cancel</button>
                 </div>
             </div>
         </div>
@@ -174,7 +126,7 @@
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📥 Export & Share Statement</h3>
+                <h3>Export & Share</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
