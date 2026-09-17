@@ -10,21 +10,6 @@
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Synth Audio Engine Settings
-    let audioCtx = null;
-    let masterGain = null;
-    let isAudioPlaying = false;
-    let audioLoopTimer = null;
-    let currentSongIndex = 0;
-
-    const songPlaylist = [
-        { title: "2026 Sinhala Hit 01 - මාගෙ ආදරේ", speed: 380, pattern: [261.63, 329.63, 392.00, 523.25, 392.00, 329.63] },
-        { title: "2026 Sinhala Hit 02 - හිතට දැනෙනා", speed: 320, pattern: [293.66, 349.23, 440.00, 587.33, 440.00, 349.23] },
-        { title: "2026 Sinhala Hit 03 - සුළඟක් වී", speed: 420, pattern: [329.63, 392.00, 493.88, 659.25, 493.88, 392.00] }
-    ];
-
-    let currentPatternIndex = 0;
-
     document.addEventListener('DOMContentLoaded', initApp);
 
     function initApp() {
@@ -55,8 +40,8 @@
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
-    /* Animated Auto-Dismiss Toast Alert System */
-    function showToast(message, type = 'success', duration = 3000) {
+    /* Toast Notification System */
+    function showToast(message, type = 'success', duration = 2500) {
         let container = document.getElementById('toast-container');
         if (!container) {
             container = document.createElement('div');
@@ -66,23 +51,12 @@
         }
 
         const icons = { success: '✨', error: '❌', warning: '⚠️', info: 'ℹ️' };
-
         const toast = document.createElement('div');
         toast.className = `animated-toast toast-${type}`;
-        toast.style.setProperty('--duration', `${duration}ms`);
-
-        toast.innerHTML = `
-            <div class="toast-icon">${icons[type] || '✨'}</div>
-            <div class="toast-message">${message}</div>
-            <div class="toast-progress"></div>
-        `;
+        toast.innerHTML = `<span>${icons[type] || '✨'}</span><span>${message}</span>`;
 
         container.appendChild(toast);
-
-        setTimeout(() => {
-            toast.classList.add('toast-hide');
-            toast.addEventListener('animationend', () => toast.remove());
-        }, duration);
+        setTimeout(() => toast.remove(), duration);
     }
 
     function showConfirmDialog(title, message, onConfirm) {
@@ -112,110 +86,26 @@
 
     function playClickSound() {
         if (!soundEnabled) return;
-        if (navigator.vibrate) navigator.vibrate(15);
+        if (navigator.vibrate) navigator.vibrate(12);
 
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.frequency.setValueAtTime(800, ctx.currentTime);
-            gain.gain.setValueAtTime(0.05, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+            osc.frequency.setValueAtTime(850, ctx.currentTime);
+            gain.gain.setValueAtTime(0.04, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start();
-            osc.stop(ctx.currentTime + 0.05);
+            osc.stop(ctx.currentTime + 0.04);
         } catch (e) {}
-    }
-
-    function initAudioContext() {
-        if (!audioCtx) {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioContextClass) {
-                audioCtx = new AudioContextClass();
-                masterGain = audioCtx.createGain();
-                const vol = parseFloat(document.getElementById('player-volume').value) || 0.5;
-                masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
-                masterGain.connect(audioCtx.destination);
-            }
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
-
-    function triggerVisualizer() {
-        const bars = document.querySelectorAll('.v-bar');
-        bars.forEach(bar => {
-            if (isAudioPlaying) {
-                const h = Math.floor(Math.random() * 14) + 4;
-                bar.style.height = `${h}px`;
-            } else {
-                bar.style.height = '4px';
-            }
-        });
-    }
-
-    function playNextMelodyStep() {
-        if (!isAudioPlaying) return;
-
-        initAudioContext();
-        if (!audioCtx) return;
-
-        const currentSong = songPlaylist[currentSongIndex];
-        const freq = currentSong.pattern[currentPatternIndex];
-        currentPatternIndex = (currentPatternIndex + 1) % currentSong.pattern.length;
-
-        try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-
-            osc.connect(gain);
-            gain.connect(masterGain);
-
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-            triggerVisualizer();
-        } catch (e) {}
-
-        audioLoopTimer = setTimeout(playNextMelodyStep, currentSong.speed);
-    }
-
-    function startMusic() {
-        initAudioContext();
-        if (!isAudioPlaying) {
-            isAudioPlaying = true;
-            updatePlayerUI();
-            playNextMelodyStep();
-        }
-    }
-
-    function stopMusic() {
-        isAudioPlaying = false;
-        if (audioLoopTimer) clearTimeout(audioLoopTimer);
-        triggerVisualizer();
-        updatePlayerUI();
-    }
-
-    function updatePlayerUI() {
-        const songTitleElem = document.getElementById('player-song-title');
-        const playBtn = document.getElementById('player-play-btn');
-        if (songTitleElem) songTitleElem.innerText = songPlaylist[currentSongIndex].title;
-        if (playBtn) playBtn.innerText = isAudioPlaying ? '⏸️' : '▶️';
     }
 
     function setupSettings() {
         const settingsBtn = document.getElementById('settings-btn');
         const themeSelect = document.getElementById('theme-select');
         const soundToggle = document.getElementById('sound-toggle');
-        const volumeInput = document.getElementById('player-volume');
 
         if (settingsBtn) settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
         document.getElementById('close-settings-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
@@ -232,27 +122,6 @@
                 localStorage.setItem('wm_calc_sound', soundEnabled);
             });
         }
-
-        if (volumeInput) {
-            volumeInput.addEventListener('input', (e) => {
-                initAudioContext();
-                if (masterGain && audioCtx) {
-                    masterGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime);
-                }
-            });
-        }
-
-        document.getElementById('player-play-btn').addEventListener('click', () => isAudioPlaying ? stopMusic() : startMusic());
-        document.getElementById('player-next-btn').addEventListener('click', () => {
-            currentSongIndex = (currentSongIndex + 1) % songPlaylist.length;
-            currentPatternIndex = 0;
-            updatePlayerUI();
-        });
-        document.getElementById('player-prev-btn').addEventListener('click', () => {
-            currentSongIndex = (currentSongIndex - 1 + songPlaylist.length) % songPlaylist.length;
-            currentPatternIndex = 0;
-            updatePlayerUI();
-        });
 
         document.getElementById('export-json-btn').addEventListener('click', exportBackupJSON);
         document.getElementById('import-json-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
@@ -286,9 +155,10 @@
             else if (action === 'calculate') calculateResult();
         });
 
+        // Main Calculator Save Logic
         document.getElementById('save-btn').addEventListener('click', () => {
             let resultValStr = display.value.trim().replace(/,/g, '');
-            const note = calcNote.value.trim() || 'General Calculation';
+            const note = calcNote.value.trim() || 'General Item';
 
             if (!resultValStr || resultValStr === 'Error') {
                 showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
@@ -305,20 +175,22 @@
             const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             const formattedTime = now.toLocaleTimeString();
 
+            // Create record structure with Amount and optional Amount KG / Pieces
             const record = {
                 id: Date.now(),
                 date: formattedDate,
                 time: formattedTime,
                 note: note,
-                expression: newValue.toString(),
-                addedWeight: "",
-                addedPieces: ""
+                amount: newValue,
+                amountKg: 0,
+                pieces: 0
             };
-            
-            savedRecords.push(record);
-            showToast('🎉 Data Saved Successfully!', 'success');
 
+            savedRecords.push(record);
             saveToStorage();
+
+            showToast(`🎉 '${note}' සාර්ථකව Save විය!`, 'success');
+
             calcNote.value = '';
             display.value = '';
             livePreview.innerText = '';
@@ -345,30 +217,26 @@
             );
         });
 
+        // Edit Modal Events
         document.getElementById('close-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
         document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
 
-        // Save Edit Changes
         document.getElementById('save-edit-btn').addEventListener('click', () => {
             if (!editingRecordId) return;
-            const newNote = document.getElementById('edit-note').value.trim();
-            const newExpr = document.getElementById('edit-expression').value.trim();
-            const newWeight = document.getElementById('edit-added-weight').value.trim();
-            const newPieces = document.getElementById('edit-added-pieces').value.trim();
 
-            if (!newNote) {
-                showToast('කරුණාකර විස්තරය ඇතුළත් කරන්න!', 'warning');
-                return;
-            }
+            const newNote = document.getElementById('edit-note').value.trim() || 'General Item';
+            const newAmount = parseFloat(document.getElementById('edit-amount').value) || 0;
+            const newAmountKg = parseFloat(document.getElementById('edit-amount-kg').value) || 0;
+            const newPieces = parseInt(document.getElementById('edit-pieces').value, 10) || 0;
 
             savedRecords = savedRecords.map(r => {
                 if (r.id === editingRecordId) {
-                    return { 
-                        ...r, 
-                        note: newNote, 
-                        expression: newExpr,
-                        addedWeight: newWeight,
-                        addedPieces: newPieces
+                    return {
+                        ...r,
+                        note: newNote,
+                        amount: newAmount,
+                        amountKg: newAmountKg,
+                        pieces: newPieces
                     };
                 }
                 return r;
@@ -377,9 +245,10 @@
             saveToStorage();
             editModal.classList.add('hidden');
             renderHistory();
-            showToast('සංස්කරණය සාර්ථකව සුරකින ලදී!', 'success');
+            showToast('දත්තයන් සාර්ථකව සංස්කරණය විය!', 'success');
         });
 
+        // Download Modal Events
         document.getElementById('download-btn').addEventListener('click', () => {
             if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
             document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
@@ -387,142 +256,8 @@
         });
 
         document.getElementById('close-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
-        document.getElementById('cancel-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
-
         document.getElementById('confirm-download-btn').addEventListener('click', () => processExport(false));
         document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
-    }
-
-    function generateExportHTML(title) {
-        let totalSum = 0;
-        const rows = savedRecords.map((r, index) => {
-            const valNum = parseFloat(r.expression) || 0;
-            totalSum += valNum;
-            let addedInfo = '-';
-            if (r.addedWeight || r.addedPieces) {
-                addedInfo = `${r.addedWeight || 0} kg (${r.addedPieces || 0} කෑලි)`;
-            }
-            return `
-                <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">${r.date} <br><span style="color:#9ca3af; font-size:11px;">${r.time}</span></td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 14px;">${escapeHTML(r.note)}</td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #1e40af; font-weight: 700; font-size: 14px; text-align: right;">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 14px; text-align: right;">${addedInfo}</td>
-                </tr>
-            `;
-        }).join('');
-
-        return `
-            <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 800px; margin: auto; background: #ffffff;">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
-                    <div>
-                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR PRO</h1>
-                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Calculation Statement & History Report</p>
-                    </div>
-                    <div style="text-align: right; color: #6b7280; font-size: 12px;">
-                        <div>Date: ${new Date().toLocaleDateString()}</div>
-                        <div>Total Items: ${savedRecords.length}</div>
-                    </div>
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                    <thead>
-                        <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Date & Time</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (Note)</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Original Value</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Added Weight (kg)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-
-                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px;">
-                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">
-                        WM Calculator System
-                    </p>
-                </div>
-            </div>
-        `;
-    }
-
-    async function processExport(isShare = false) {
-        const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
-        const format = document.getElementById('export-format').value;
-
-        let contentBlob = null;
-        let mimeType = 'text/plain';
-        let extension = format;
-
-        if (format === 'pdf' && window.html2pdf) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = generateExportHTML(fname);
-
-            const opt = { 
-                margin: 8, 
-                filename: `${fname}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            
-            if (isShare) {
-                const pdfWorker = html2pdf().set(opt).from(tempDiv);
-                contentBlob = await pdfWorker.output('blob');
-                mimeType = 'application/pdf';
-            } else {
-                html2pdf().set(opt).from(tempDiv).save();
-                downloadModal.classList.add('hidden');
-                showToast('📥 PDF Download සාර්ථකයි!', 'success');
-                return;
-            }
-        } else if (format === 'html' || format === 'xml') {
-            mimeType = format === 'html' ? 'text/html' : 'text/xml';
-            let content = '';
-            if (format === 'html') {
-                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
-            } else {
-                content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
-                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><orig_value>${r.expression}</orig_value><added_kg>${r.addedWeight || 0}</added_kg><added_pieces>${r.addedPieces || 0}</added_pieces></record>`).join('') +
-                    `</records>`;
-            }
-            contentBlob = new Blob([content], { type: mimeType });
-        } else {
-            mimeType = 'application/msword';
-            extension = 'doc';
-            let text = `WM CALCULATOR REPORT\n\n` + 
-                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: Original=${r.expression} | Added=${r.addedWeight || 0}kg (${r.addedPieces || 0} pcs)`).join('\n') +
-                `\n\n----------------------------------------\nWM Calculator Pro`;
-            contentBlob = new Blob([text], { type: 'text/plain' });
-        }
-
-        if (isShare) {
-            const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator History Report' });
-                    showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
-                } catch (err) {
-                    if (err.name !== 'AbortError') downloadBlob(contentBlob, `${fname}.${extension}`);
-                }
-            } else {
-                downloadBlob(contentBlob, `${fname}.${extension}`);
-            }
-        } else {
-            downloadBlob(contentBlob, `${fname}.${extension}`);
-        }
-
-        downloadModal.classList.add('hidden');
-    }
-
-    function downloadBlob(blob, filename) {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        a.click();
-        showToast('📥 Download Completed!', 'success');
     }
 
     function appendCharacter(char) {
@@ -567,93 +302,73 @@
         }
     }
 
+    /* Render History Cards */
     function renderHistory() {
         savedList.innerHTML = '';
         const searchTxt = document.getElementById('history-search').value.toLowerCase();
 
         const filtered = savedRecords.filter(r => {
-            const matchNote = (r.note || '').toLowerCase().includes(searchTxt);
-            const matchExpr = String(r.expression || '').includes(searchTxt);
-            const matchWeight = String(r.addedWeight || '').includes(searchTxt);
-            return matchNote || matchExpr || matchWeight;
+            return r.note.toLowerCase().includes(searchTxt) || 
+                   String(r.amount).includes(searchTxt) || 
+                   String(r.amountKg).includes(searchTxt);
         });
 
-        let totalOriginalSum = 0;
-        let totalAddedKgSum = 0;
-
         if (filtered.length === 0) {
-            savedList.innerHTML = '<p class="empty-msg">දත්ත කිසිවක් හමු නොවුණි.</p>';
-        } else {
-            filtered.slice().reverse().forEach(item => {
-                const valNum = parseFloat(item.expression) || 0;
-                totalOriginalSum += valNum;
+            savedList.innerHTML = '<p style="color:#9ca3af; text-align:center; padding:20px; font-size:13px;">දත්ත කිසිවක් හමු නොවුණි.</p>';
+            return;
+        }
 
-                if (item.addedWeight) {
-                    totalAddedKgSum += parseFloat(item.addedWeight) || 0;
-                }
+        filtered.slice().reverse().forEach(item => {
+            const mainAmt = parseFloat(item.amount) || 0;
+            const kgAmt = parseFloat(item.amountKg) || 0;
+            const pcsAmt = parseInt(item.pieces, 10) || 0;
 
-                const wrapper = document.createElement('div');
-                wrapper.className = 'saved-item-wrapper';
-
-                let addedExtraHtml = '';
-                if (item.addedWeight || item.addedPieces) {
-                    const weightStr = item.addedWeight ? `${escapeHTML(item.addedWeight)} kg` : '0 kg';
-                    const piecesStr = item.addedPieces ? `${escapeHTML(item.addedPieces)} කෑලි` : 'කෑලි 0';
-                    addedExtraHtml = `
-                        <div class="saved-item-row margin-top-4">
-                            <span class="val-tag new-tag">අලුත් අගය:</span>
-                            <span class="val-display new-val">${weightStr} <small class="pieces-badge">(${piecesStr})</small></span>
+            const wrapper = document.createElement('div');
+            wrapper.className = 'saved-item-wrapper';
+            wrapper.innerHTML = `
+                <div class="swipe-background swipe-bg-left">✏️ Edit</div>
+                <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
+                <div class="saved-item" data-id="${item.id}">
+                    <div class="saved-item-header">
+                        <span class="saved-item-title">${escapeHTML(item.note)}</span>
+                        <span class="saved-item-date">${item.date} | ${item.time}</span>
+                    </div>
+                    <div class="saved-values-box">
+                        <div class="val-row">
+                            <span class="val-label">Amount (මුල් ගණන):</span>
+                            <span class="val-amount">${mainAmt.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
-                    `;
-                }
-
-                wrapper.innerHTML = `
-                    <div class="swipe-background swipe-bg-left">✏️ Edit Modal</div>
-                    <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
-                    <div class="saved-item" data-id="${item.id}">
-                        <div class="saved-item-header">
-                            <span class="saved-item-title">${escapeHTML(item.note)}</span>
-                            <span class="saved-item-date">${item.date} | ${item.time}</span>
-                        </div>
-                        <div class="saved-item-body">
-                            <div class="saved-item-row">
-                                <span class="val-tag orig-tag">මුල් අගය:</span>
-                                <span class="val-display orig-val">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                        <div class="val-row">
+                            <span class="val-label">Amount KG (අලුත් අගය):</span>
+                            <div>
+                                <span class="val-kg">${kgAmt > 0 ? kgAmt.toLocaleString('en-US') + ' kg' : '0.00 kg'}</span>
+                                ${pcsAmt > 0 ? `<span class="val-pcs">${pcsAmt} කෑලි</span>` : ''}
                             </div>
-                            ${addedExtraHtml}
                         </div>
                     </div>
-                `;
-
-                setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
-                savedList.appendChild(wrapper);
-            });
-        }
-
-        const totalValBox = document.getElementById('history-total-val');
-        if (totalValBox) {
-            totalValBox.innerHTML = `
-                <div>මුළු මුල් අගයන්ගේ එකතුව: <strong style="color:#ff9800; font-size:15px;">${totalOriginalSum.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></div>
-                ${totalAddedKgSum > 0 ? `<div style="color:#00e676; font-size:12px; margin-top:4px;">මුළු අලුතින් එකතු කළ බර: <strong>${totalAddedKgSum.toFixed(2)} kg</strong></div>` : ''}
+                </div>
             `;
-        }
+
+            setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
+            savedList.appendChild(wrapper);
+        });
     }
 
-    /* Direction-aware Swipe Gesture Engine */
+    /* Touch & Mouse Swipe Gesture Engine (Right: Edit, Left: Delete) */
     function setupSwipeGesture(element, item) {
         let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
 
-        const start = (e) => { 
-            startX = e.touches ? e.touches[0].clientX : e.clientX; 
+        const start = (e) => {
+            startX = e.touches ? e.touches[0].clientX : e.clientX;
             startY = e.touches ? e.touches[0].clientY : e.clientY;
-            isSwiping = true; 
+            isSwiping = true;
             isScrolling = false;
-            element.style.transition = 'none'; 
+            element.style.transition = 'none';
         };
 
         const move = (e) => {
             if (!isSwiping) return;
-            
+
             let touchX = e.touches ? e.touches[0].clientX : e.clientX;
             let touchY = e.touches ? e.touches[0].clientY : e.clientY;
 
@@ -668,33 +383,25 @@
 
             if (isScrolling) return;
 
-            if (currentX > 110) currentX = 110;
-            if (currentX < -110) currentX = -110;
+            if (currentX > 90) currentX = 90;
+            if (currentX < -90) currentX = -90;
             element.style.transform = `translateX(${currentX}px)`;
         };
 
         const end = () => {
             if (!isSwiping) return;
             isSwiping = false;
-            element.style.transition = 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            element.style.transition = 'transform 0.2s ease-out';
 
             if (!isScrolling) {
-                // Right swipe -> Open Edit Popup
-                if (currentX > 60) {
+                if (currentX > 55) { // Right Swipe -> EDIT
                     element.style.transform = 'translateX(0)';
-                    editingRecordId = item.id;
-                    document.getElementById('edit-note').value = item.note || '';
-                    document.getElementById('edit-expression').value = item.expression || '';
-                    document.getElementById('edit-added-weight').value = item.addedWeight || '';
-                    document.getElementById('edit-added-pieces').value = item.addedPieces || '';
-                    editModal.classList.remove('hidden');
-                } 
-                // Left swipe -> Confirm Delete
-                else if (currentX < -60) {
+                    openEditModal(item);
+                } else if (currentX < -55) { // Left Swipe -> DELETE
                     element.style.transform = 'translateX(0)';
                     showConfirmDialog(
                         'මකා දැමීම', 
-                        `'${item.note}' දත්තය මකා දැමීමට ඔබට විශ්වාසද?`, 
+                        `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
                         () => {
                             savedRecords = savedRecords.filter(r => r.id !== item.id);
                             saveToStorage(); 
@@ -706,8 +413,7 @@
                     element.style.transform = 'translateX(0)';
                 }
             }
-            currentX = 0;
-            currentY = 0;
+            currentX = 0; currentY = 0;
         };
 
         if ('ontouchstart' in window) {
@@ -719,6 +425,144 @@
             element.addEventListener('mousemove', (e) => isSwiping && move(e));
             element.addEventListener('mouseup', end);
         }
+    }
+
+    function openEditModal(item) {
+        editingRecordId = item.id;
+        document.getElementById('edit-note').value = item.note || '';
+        document.getElementById('edit-amount').value = item.amount || 0;
+        document.getElementById('edit-amount-kg').value = item.amountKg || '';
+        document.getElementById('edit-pieces').value = item.pieces || '';
+        editModal.classList.remove('hidden');
+    }
+
+    /* Export Generator (PDF, HTML, Doc, XML) */
+    function generateExportHTML(title) {
+        const rows = savedRecords.map((r, index) => {
+            const mainAmt = parseFloat(r.amount) || 0;
+            const kgAmt = parseFloat(r.amountKg) || 0;
+            const pcsAmt = parseInt(r.pieces, 10) || 0;
+
+            return `
+                <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 12px;">${r.date}<br><span style="color:#9ca3af; font-size:10px;">${r.time}</span></td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 700; font-size: 13px;">${escapeHTML(r.note)}</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #16a34a; font-weight: 700; font-size: 13px; text-align: right;">${mainAmt.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #0284c7; font-weight: 700; font-size: 13px; text-align: right;">${kgAmt > 0 ? kgAmt.toLocaleString('en-US') + ' kg' : '-'}</td>
+                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #d97706; font-weight: 600; font-size: 12px; text-align: center;">${pcsAmt > 0 ? pcsAmt : '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div style="font-family: 'Inter', sans-serif; padding: 20px; color: #1f2937; max-width: 800px; margin: auto; background: #ffffff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f97316; padding-bottom: 12px; margin-bottom: 18px;">
+                    <div>
+                        <h1 style="margin: 0; color: #111827; font-size: 22px; font-weight: 800;">WM CALCULATOR PRO</h1>
+                        <p style="margin: 3px 0 0 0; color: #6b7280; font-size: 12px;">Saved History & Dual Amount Report</p>
+                    </div>
+                    <div style="text-align: right; color: #6b7280; font-size: 11px;">
+                        <div>Date: ${new Date().toLocaleDateString()}</div>
+                        <div>Total Records: ${savedRecords.length}</div>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Date & Time</th>
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Description (Note)</th>
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600; text-align: right;">Amount</th>
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600; text-align: right;">Amount KG</th>
+                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600; text-align: center;">Pieces (කෑලි)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+
+                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 12px;">
+                    <p style="margin: 0; font-size: 11px; color: #6b7280; font-weight: 600;">Generated by WM Calculator System</p>
+                </div>
+            </div>
+        `;
+    }
+
+    async function processExport(isShare = false) {
+        const fname = document.getElementById('export-filename').value.trim() || 'WM_Report';
+        const format = document.getElementById('export-format').value;
+
+        let contentBlob = null;
+        let mimeType = 'text/plain';
+        let extension = format;
+
+        if (format === 'pdf' && window.html2pdf) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = generateExportHTML(fname);
+
+            const opt = { 
+                margin: 8, 
+                filename: `${fname}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            if (isShare) {
+                const pdfWorker = html2pdf().set(opt).from(tempDiv);
+                contentBlob = await pdfWorker.output('blob');
+                mimeType = 'application/pdf';
+            } else {
+                html2pdf().set(opt).from(tempDiv).save();
+                downloadModal.classList.add('hidden');
+                showToast('📥 PDF Download සාර්ථකයි!', 'success');
+                return;
+            }
+        } else if (format === 'html' || format === 'xml') {
+            mimeType = format === 'html' ? 'text/html' : 'text/xml';
+            let content = '';
+            if (format === 'html') {
+                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
+            } else {
+                content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
+                    savedRecords.map(r => `<record><date>${r.date}</date><note>${escapeHTML(r.note)}</note><amount>${r.amount}</amount><amountKg>${r.amountKg}</amountKg><pieces>${r.pieces}</pieces></record>`).join('') +
+                    `</records>`;
+            }
+            contentBlob = new Blob([content], { type: mimeType });
+        } else {
+            mimeType = 'application/msword';
+            extension = 'doc';
+            let text = `WM CALCULATOR REPORT\n\n` + 
+                savedRecords.map(r => `[${r.date}] ${r.note} -> Amount: ${r.amount} | Amount KG: ${r.amountKg} kg | Pieces: ${r.pieces}`).join('\n');
+            contentBlob = new Blob([text], { type: 'text/plain' });
+        }
+
+        if (isShare) {
+            const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator History Report' });
+                    showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
+                } catch (err) {
+                    if (err.name !== 'AbortError') downloadBlob(contentBlob, `${fname}.${extension}`);
+                }
+            } else {
+                downloadBlob(contentBlob, `${fname}.${extension}`);
+            }
+        } else {
+            downloadBlob(contentBlob, `${fname}.${extension}`);
+        }
+
+        downloadModal.classList.add('hidden');
+    }
+
+    function downloadBlob(blob, filename) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        showToast('📥 Download Completed!', 'success');
     }
 
     function exportBackupJSON() {
@@ -762,7 +606,7 @@
             });
             suggestionsBox.classList.remove('hidden');
         }
-        
+
         calcNote.addEventListener('focus', () => showSuggestions(calcNote.value));
         calcNote.addEventListener('input', () => showSuggestions(calcNote.value));
 
