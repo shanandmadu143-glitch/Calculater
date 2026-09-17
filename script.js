@@ -1,9 +1,7 @@
 (function () {
     'use strict';
 
-    let display, livePreview, calcNote, savedModal, editModal, downloadModal, settingsModal, savedList;
-    let standardCalcView, kgCalcView, calcModeToggle;
-    let kgItemName, kgPartsInput, kgTotalPreview, kgPriceInput;
+    let display, livePreview, calcNote, savedModal, editModal, downloadModal, settingsModal, savedList, suggestionsBox;
     let savedRecords = [];
     let editingRecordId = null;
 
@@ -12,7 +10,7 @@
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Music Synth Engine
+    // Audio Engine Settings
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -24,6 +22,7 @@
         { title: "2026 Sinhala Hit 02 - හිතට දැනෙනා", speed: 320, pattern: [293.66, 349.23, 440.00, 587.33, 440.00, 349.23] },
         { title: "2026 Sinhala Hit 03 - සුළඟක් වී", speed: 420, pattern: [329.63, 392.00, 493.88, 659.25, 493.88, 392.00] }
     ];
+
     let currentPatternIndex = 0;
 
     document.addEventListener('DOMContentLoaded', initApp);
@@ -37,15 +36,7 @@
         downloadModal = document.getElementById('download-modal');
         settingsModal = document.getElementById('settings-modal');
         savedList = document.getElementById('saved-list');
-
-        standardCalcView = document.getElementById('standard-calc-view');
-        kgCalcView = document.getElementById('kg-calc-view');
-        calcModeToggle = document.getElementById('calc-mode-toggle');
-
-        kgItemName = document.getElementById('kg-item-name');
-        kgPartsInput = document.getElementById('kg-parts-input');
-        kgTotalPreview = document.getElementById('kg-total-preview');
-        kgPriceInput = document.getElementById('kg-price-input');
+        suggestionsBox = document.getElementById('custom-suggestions');
 
         try {
             savedRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -64,6 +55,7 @@
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
+    /* Animated Auto-Dismiss Toast Notifications */
     function showToast(message, type = 'success', duration = 3000) {
         let container = document.getElementById('toast-container');
         if (!container) {
@@ -136,28 +128,150 @@
         } catch (e) {}
     }
 
-    function parseKgParts(inputStr) {
-        if (!inputStr) return { total: 0, parts: [] };
-        const clean = inputStr.replace(/,/g, '.').replace(/[^0-9+. ]/g, '');
-        const parts = clean.split('+').map(p => parseFloat(p.trim())).filter(p => !isNaN(p) && p > 0);
-        const total = parts.reduce((acc, curr) => acc + curr, 0);
-        return { total, parts };
+    function initAudioContext() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) {
+                audioCtx = new AudioContextClass();
+                masterGain = audioCtx.createGain();
+                const vol = parseFloat(document.getElementById('player-volume').value) || 0.5;
+                masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                masterGain.connect(audioCtx.destination);
+            }
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function triggerVisualizer() {
+        const bars = document.querySelectorAll('.v-bar');
+        bars.forEach(bar => {
+            if (isAudioPlaying) {
+                const h = Math.floor(Math.random() * 14) + 4;
+                bar.style.height = `${h}px`;
+            } else {
+                bar.style.height = '4px';
+            }
+        });
+    }
+
+    function playNextMelodyStep() {
+        if (!isAudioPlaying) return;
+
+        initAudioContext();
+        if (!audioCtx) return;
+
+        const currentSong = songPlaylist[currentSongIndex];
+        const freq = currentSong.pattern[currentPatternIndex];
+        currentPatternIndex = (currentPatternIndex + 1) % currentSong.pattern.length;
+
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+            triggerVisualizer();
+        } catch (e) {}
+
+        audioLoopTimer = setTimeout(playNextMelodyStep, currentSong.speed);
+    }
+
+    function startMusic() {
+        initAudioContext();
+        if (!isAudioPlaying) {
+            isAudioPlaying = true;
+            updatePlayerUI();
+            playNextMelodyStep();
+        }
+    }
+
+    function stopMusic() {
+        isAudioPlaying = false;
+        if (audioLoopTimer) clearTimeout(audioLoopTimer);
+        triggerVisualizer();
+        updatePlayerUI();
+    }
+
+    function updatePlayerUI() {
+        const songTitleElem = document.getElementById('player-song-title');
+        const playBtn = document.getElementById('player-play-btn');
+        if (songTitleElem) songTitleElem.innerText = songPlaylist[currentSongIndex].title;
+        if (playBtn) playBtn.innerText = isAudioPlaying ? '⏸️' : '▶️';
+    }
+
+    function setupSettings() {
+        const settingsBtn = document.getElementById('settings-btn');
+        const themeSelect = document.getElementById('theme-select');
+        const soundToggle = document.getElementById('sound-toggle');
+        const volumeInput = document.getElementById('player-volume');
+
+        if (settingsBtn) settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+        document.getElementById('close-settings-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
+        document.getElementById('close-settings-x').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        if (themeSelect) {
+            themeSelect.value = currentTheme;
+            themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
+        }
+
+        if (soundToggle) {
+            soundToggle.addEventListener('change', (e) => {
+                soundEnabled = e.target.checked;
+                localStorage.setItem('wm_calc_sound', soundEnabled);
+            });
+        }
+
+        if (volumeInput) {
+            volumeInput.addEventListener('input', (e) => {
+                initAudioContext();
+                if (masterGain && audioCtx) {
+                    masterGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime);
+                }
+            });
+        }
+
+        document.getElementById('player-play-btn').addEventListener('click', () => isAudioPlaying ? stopMusic() : startMusic());
+        document.getElementById('player-next-btn').addEventListener('click', () => {
+            currentSongIndex = (currentSongIndex + 1) % songPlaylist.length;
+            currentPatternIndex = 0;
+            updatePlayerUI();
+        });
+        document.getElementById('player-prev-btn').addEventListener('click', () => {
+            currentSongIndex = (currentSongIndex - 1 + songPlaylist.length) % songPlaylist.length;
+            currentPatternIndex = 0;
+            updatePlayerUI();
+        });
+
+        document.getElementById('export-json-btn').addEventListener('click', exportBackupJSON);
+        document.getElementById('import-json-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
+        document.getElementById('import-file-input').addEventListener('change', importBackupJSON);
+    }
+
+    function applyTheme(theme) {
+        currentTheme = theme;
+        localStorage.setItem('wm_calc_theme', theme);
+        document.body.className = theme;
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('current-date').innerText = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        document.getElementById('current-time').innerText = now.toLocaleTimeString();
     }
 
     function bindEvents() {
-        // Mode Switch Toggle Logic
-        calcModeToggle.addEventListener('change', (e) => {
-            playClickSound();
-            if (e.target.checked) {
-                standardCalcView.classList.add('hidden');
-                kgCalcView.classList.remove('hidden');
-            } else {
-                kgCalcView.classList.add('hidden');
-                standardCalcView.classList.remove('hidden');
-            }
-        });
-
-        // Keypad buttons
         document.querySelector('.buttons').addEventListener('click', (e) => {
             const btn = e.target.closest('button');
             if (!btn) return;
@@ -172,30 +286,62 @@
             else if (action === 'calculate') calculateResult();
         });
 
-        // Real-time Kg parts calculator
-        kgPartsInput.addEventListener('input', () => {
-            const { total } = parseKgParts(kgPartsInput.value);
-            kgTotalPreview.innerText = `${total.toFixed(2)} Kg`;
-        });
-
-        // Standard Calculator Save Action
+        // Save Button Handler
         document.getElementById('save-btn').addEventListener('click', () => {
-            saveStandardEntry();
+            let resultValStr = display.value.trim().replace(/,/g, '');
+            const note = calcNote.value.trim() || 'General Calculation';
+
+            if (!resultValStr || resultValStr === 'Error') {
+                showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
+                return;
+            }
+
+            const newValue = parseFloat(resultValStr);
+            if (isNaN(newValue)) {
+                showToast('ඇතුළත් කළ අගය නිවැරදි නැත!', 'error');
+                return;
+            }
+
+            const now = new Date();
+            const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const formattedTime = now.toLocaleTimeString();
+
+            // Check existing record under same name
+            const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
+
+            if (existingIndex !== -1) {
+                const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
+                const updatedVal = currentVal + newValue;
+                
+                savedRecords[existingIndex].expression = updatedVal.toString();
+                savedRecords[existingIndex].date = formattedDate;
+                savedRecords[existingIndex].time = formattedTime;
+                
+                showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`, 'info');
+            } else {
+                const record = {
+                    id: Date.now(),
+                    date: formattedDate,
+                    time: formattedTime,
+                    note: note,
+                    expression: newValue.toString(),
+                    addedKg: null,
+                    addedPieces: null
+                };
+                savedRecords.push(record);
+                showToast('🎉 දත්ත සාර්ථකව සුරැකිණි!', 'success');
+            }
+
+            saveToStorage();
+            calcNote.value = '';
+            display.value = '';
+            livePreview.innerText = '';
         });
 
-        // Kg Calculator Save Action
-        document.getElementById('save-kg-btn').addEventListener('click', () => {
-            saveKgEntry();
-        });
-
-        // History Modal Triggers
-        const openHistory = () => {
+        document.getElementById('view-btn').addEventListener('click', () => {
             renderHistory();
             savedModal.classList.remove('hidden');
-        };
-
-        document.getElementById('view-btn').addEventListener('click', openHistory);
-        document.getElementById('view-btn-kg').addEventListener('click', openHistory);
+        });
 
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
         document.getElementById('history-search').addEventListener('input', renderHistory);
@@ -213,40 +359,46 @@
             );
         });
 
-        // Edit Modal Actions
         document.getElementById('close-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
         document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
 
+        // Save Edited & Added Values Popup Handler
         document.getElementById('save-edit-btn').addEventListener('click', () => {
             if (!editingRecordId) return;
             const newNote = document.getElementById('edit-note').value.trim();
             const newExpr = document.getElementById('edit-expression').value.trim();
-            const newKg = parseFloat(document.getElementById('edit-kg').value) || 0;
-            const newKgParts = document.getElementById('edit-kg-parts').value.trim();
+            const addedKgVal = document.getElementById('edit-added-kg').value.trim();
+            const addedPiecesVal = document.getElementById('edit-added-pieces').value.trim();
 
-            savedRecords = savedRecords.map(r => r.id === editingRecordId ? {
-                ...r,
-                note: newNote,
-                expression: newExpr,
-                kg: newKg,
-                kgParts: newKgParts
-            } : r);
+            if (!newNote || !newExpr) {
+                showToast('කරුණාකර විස්තරය සහ ප්‍රධාන අගය ඇතුළත් කරන්න!', 'warning');
+                return;
+            }
+
+            savedRecords = savedRecords.map(r => {
+                if (r.id === editingRecordId) {
+                    return {
+                        ...r,
+                        note: newNote,
+                        expression: newExpr,
+                        addedKg: addedKgVal ? parseFloat(addedKgVal) : r.addedKg,
+                        addedPieces: addedPiecesVal ? parseInt(addedPiecesVal) : r.addedPieces
+                    };
+                }
+                return r;
+            });
 
             saveToStorage();
             editModal.classList.add('hidden');
             renderHistory();
-            showToast('සංස්කරණය සාර්ථකයි!', 'success');
+            showToast('සංස්කරණය සහ අලුත් දත්ත එකතු කිරීම සාර්ථකයි!', 'success');
         });
 
-        // Export Modal Triggers
-        const openExport = () => {
+        document.getElementById('download-btn').addEventListener('click', () => {
             if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
             document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
             downloadModal.classList.remove('hidden');
-        };
-
-        document.getElementById('download-btn').addEventListener('click', openExport);
-        document.getElementById('download-btn-kg').addEventListener('click', openExport);
+        });
 
         document.getElementById('close-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
         document.getElementById('cancel-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
@@ -255,275 +407,41 @@
         document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
     }
 
-    function saveStandardEntry() {
-        let resultValStr = display.value.trim().replace(/,/g, '');
-        const note = calcNote.value.trim() || 'General Item';
-
-        if (!resultValStr || resultValStr === 'Error') {
-            showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
-            return;
-        }
-
-        const newValue = parseFloat(resultValStr);
-        if (isNaN(newValue)) {
-            showToast('ඇතුළත් කළ අගය නිවැරදි නැත!', 'error');
-            return;
-        }
-
-        const now = new Date();
-        const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-        const formattedTime = now.toLocaleTimeString();
-
-        const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
-
-        if (existingIndex !== -1) {
-            const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
-            const updatedVal = currentVal + newValue;
-            
-            savedRecords[existingIndex].expression = updatedVal.toString();
-            savedRecords[existingIndex].date = formattedDate;
-            savedRecords[existingIndex].time = formattedTime;
-            
-            showToast(`➕ '${note}' සඳහා අගය එකතු විය! Total: ${updatedVal.toLocaleString('en-US')}`, 'info');
-        } else {
-            savedRecords.push({
-                id: Date.now(),
-                date: formattedDate,
-                time: formattedTime,
-                note: note,
-                expression: newValue.toString(),
-                kg: 0,
-                kgParts: ''
-            });
-            showToast('🎉 Data Saved Successfully!', 'success');
-        }
-
-        saveToStorage();
-        calcNote.value = '';
-        display.value = '';
-        livePreview.innerText = '';
-    }
-
-    function saveKgEntry() {
-        const name = kgItemName.value.trim() || 'Kg Item';
-        const partsRaw = kgPartsInput.value.trim();
-        const { total: kgAdded, parts } = parseKgParts(partsRaw);
-        const priceAdded = parseFloat(kgPriceInput.value) || 0;
-
-        if (kgAdded <= 0 && priceAdded <= 0) {
-            showToast('කරුණාකර Kg ප්‍රමාණයක් හෝ වටිනාකමක් ඇතුළත් කරන්න!', 'warning');
-            return;
-        }
-
-        const now = new Date();
-        const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-        const formattedTime = now.toLocaleTimeString();
-
-        const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === name.toLowerCase());
-
-        if (existingIndex !== -1) {
-            const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
-            const currentKg = parseFloat(savedRecords[existingIndex].kg) || 0;
-            const existingParts = savedRecords[existingIndex].kgParts ? savedRecords[existingIndex].kgParts + ' + ' : '';
-
-            savedRecords[existingIndex].expression = (currentVal + priceAdded).toString();
-            savedRecords[existingIndex].kg = currentKg + kgAdded;
-            savedRecords[existingIndex].kgParts = existingParts + (parts.length > 0 ? parts.join('+') : `${kgAdded}`);
-            savedRecords[existingIndex].date = formattedDate;
-            savedRecords[existingIndex].time = formattedTime;
-
-            showToast(`⚖️ '${name}' සඳහා Kg ${kgAdded.toFixed(2)} එකතු විය! Total Kg: ${(currentKg + kgAdded).toFixed(2)}`, 'success');
-        } else {
-            savedRecords.push({
-                id: Date.now(),
-                date: formattedDate,
-                time: formattedTime,
-                note: name,
-                expression: priceAdded.toString(),
-                kg: kgAdded,
-                kgParts: parts.length > 0 ? parts.join('+') : (kgAdded > 0 ? `${kgAdded}` : '')
-            });
-            showToast('🎉 Kg දත්ත සාර්ථකව සුරකින ලදී!', 'success');
-        }
-
-        saveToStorage();
-        kgItemName.value = '';
-        kgPartsInput.value = '';
-        kgPriceInput.value = '';
-        kgTotalPreview.innerText = '0.00 Kg';
-    }
-
-    function renderHistory() {
-        savedList.innerHTML = '';
-        const searchTxt = document.getElementById('history-search').value.toLowerCase();
-
-        const filtered = savedRecords.filter(r => {
-            return r.note.toLowerCase().includes(searchTxt) || 
-                   String(r.expression).includes(searchTxt) ||
-                   String(r.kg).includes(searchTxt);
-        });
-
-        let totalValueSum = 0;
-        let totalKgSum = 0;
-
-        if (filtered.length === 0) {
-            savedList.innerHTML = '<p style="color:#888; text-align:center; padding:18px;">දත්ත කිසිවක් හමු නොවුණි.</p>';
-        } else {
-            filtered.slice().reverse().forEach(item => {
-                const valNum = parseFloat(item.expression) || 0;
-                const kgNum = parseFloat(item.kg) || 0;
-                totalValueSum += valNum;
-                totalKgSum += kgNum;
-
-                const wrapper = document.createElement('div');
-                wrapper.className = 'saved-item-wrapper';
-                wrapper.innerHTML = `
-                    <div class="swipe-background swipe-bg-left">✏️ Edit (දකුණට)</div>
-                    <div class="swipe-background swipe-bg-right">🗑️ Delete (වමට)</div>
-                    <div class="saved-item" data-id="${item.id}">
-                        <div class="saved-item-header">
-                            <span class="saved-item-title">${escapeHTML(item.note)}</span>
-                            <span class="saved-item-date">${item.date} | ${item.time}</span>
-                        </div>
-                        <div class="saved-item-details">
-                            <div class="saved-badge-row">
-                                <span class="badge badge-value">💰 Rs. ${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                ${kgNum > 0 ? `<span class="badge badge-kg">⚖️ ${kgNum.toFixed(2)} Kg</span>` : ''}
-                            </div>
-                            ${item.kgParts ? `<div class="parts-detail">🧩 කොටස්: ${escapeHTML(item.kgParts)}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-                setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
-                savedList.appendChild(wrapper);
-            });
-        }
-
-        document.getElementById('history-total-val').innerText = `Rs. ${totalValueSum.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-        document.getElementById('history-total-kg').innerText = `${totalKgSum.toFixed(2)} Kg`;
-    }
-
-    /* Direction-Aware Swipe Gesture Engine */
-    function setupSwipeGesture(element, item) {
-        let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
-
-        const start = (e) => { 
-            startX = e.touches ? e.touches[0].clientX : e.clientX; 
-            startY = e.touches ? e.touches[0].clientY : e.clientY;
-            isSwiping = true; 
-            isScrolling = false;
-            element.style.transition = 'none'; 
-        };
-
-        const move = (e) => {
-            if (!isSwiping) return;
-            
-            let touchX = e.touches ? e.touches[0].clientX : e.clientX;
-            let touchY = e.touches ? e.touches[0].clientY : e.clientY;
-
-            currentX = touchX - startX;
-            currentY = touchY - startY;
-
-            if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
-                isScrolling = true;
-                element.style.transform = 'translateX(0)';
-                return;
-            }
-
-            if (isScrolling) return;
-
-            if (currentX > 110) currentX = 110;
-            if (currentX < -110) currentX = -110;
-            element.style.transform = `translateX(${currentX}px)`;
-        };
-
-        const end = () => {
-            if (!isSwiping) return;
-            isSwiping = false;
-            element.style.transition = 'transform 0.2s ease-out';
-
-            if (!isScrolling) {
-                // Swipe Right -> Edit Modal
-                if (currentX > 55) {
-                    element.style.transform = 'translateX(0)';
-                    editingRecordId = item.id;
-                    document.getElementById('edit-note').value = item.note || '';
-                    document.getElementById('edit-expression').value = item.expression || '0';
-                    document.getElementById('edit-kg').value = item.kg || 0;
-                    document.getElementById('edit-kg-parts').value = item.kgParts || '';
-                    editModal.classList.remove('hidden');
-                } 
-                // Swipe Left -> Delete
-                else if (currentX < -55) {
-                    element.style.transform = 'translateX(0)';
-                    showConfirmDialog(
-                        'මකා දැමීම', 
-                        `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
-                        () => {
-                            savedRecords = savedRecords.filter(r => r.id !== item.id);
-                            saveToStorage(); 
-                            renderHistory();
-                            showToast('දත්තය මකා දමන ලදී!', 'info');
-                        }
-                    );
-                } else {
-                    element.style.transform = 'translateX(0)';
-                }
-            }
-            currentX = 0; currentY = 0;
-        };
-
-        if ('ontouchstart' in window) {
-            element.addEventListener('touchstart', start, {passive:true});
-            element.addEventListener('touchmove', move, {passive:true});
-            element.addEventListener('touchend', end);
-        } else {
-            element.addEventListener('mousedown', start);
-            element.addEventListener('mousemove', (e) => isSwiping && move(e));
-            element.addEventListener('mouseup', end);
-        }
-    }
-
     function generateExportHTML(title) {
         let totalSum = 0;
-        let totalKg = 0;
-
         const rows = savedRecords.map((r, index) => {
             const valNum = parseFloat(r.expression) || 0;
-            const kgNum = parseFloat(r.kg) || 0;
             totalSum += valNum;
-            totalKg += kgNum;
+            const kgDetails = r.addedKg ? `<br><span style="color:#2563eb; font-size:11px;">⚖️ +${r.addedKg} kg ${r.addedPieces ? `(${r.addedPieces} pcs)` : ''}</span>` : '';
 
             return `
                 <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
-                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 12px;">${r.date} <br><span style="color:#9ca3af; font-size:10px;">${r.time}</span></td>
-                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 13px;">${escapeHTML(r.note)}</td>
-                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #0284c7; font-weight: 600; font-size: 12px;">${kgNum.toFixed(2)} Kg <br><span style="color:#64748b; font-size:10px;">${escapeHTML(r.kgParts || '-')}</span></td>
-                    <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 14px; text-align: right;">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">${r.date} <br><span style="color:#9ca3af; font-size:11px;">${r.time}</span></td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 600; font-size: 14px;">${escapeHTML(r.note)} ${kgDetails}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 15px; text-align: right;">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                 </tr>
             `;
         }).join('');
 
         return `
-            <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 800px; margin: auto; background: #ffffff;">
+            <div style="font-family: 'Inter', sans-serif; padding: 25px; color: #1f2937; max-width: 750px; margin: auto; background: #ffffff;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
-                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR & KG STATEMENT</h1>
-                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Detailed Summary & Kg Parts Breakdown</p>
+                        <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR PRO</h1>
+                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Calculation Statement & History Report</p>
                     </div>
                     <div style="text-align: right; color: #6b7280; font-size: 12px;">
                         <div>Date: ${new Date().toLocaleDateString()}</div>
-                        <div>Total Records: ${savedRecords.length}</div>
+                        <div>Total Items: ${savedRecords.length}</div>
                     </div>
                 </div>
 
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                     <thead>
                         <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
-                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Date/Time</th>
-                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Description</th>
-                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600;">Weight (Kg) & Parts</th>
-                            <th style="padding: 10px 12px; font-size: 12px; font-weight: 600; text-align: right;">Total Amount</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Date & Time</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (Note)</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -531,21 +449,11 @@
                     </tbody>
                 </table>
 
-                <div style="display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 30px;">
-                    <div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 10px 16px; border-radius: 8px; text-align: right;">
-                        <span style="font-size: 12px; color: #15803d; font-weight: 600; display: block;">TOTAL WEIGHT</span>
-                        <span style="font-size: 18px; color: #166534; font-weight: 800;">${totalKg.toFixed(2)} Kg</span>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+                    <div style="background: #fff7ed; border: 1px solid #ff9800; padding: 12px 20px; border-radius: 8px; text-align: right; min-width: 220px;">
+                        <span style="font-size: 13px; color: #c2410c; font-weight: 600; display: block;">GRAND TOTAL</span>
+                        <span style="font-size: 22px; color: #9a3412; font-weight: 800;">${totalSum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                     </div>
-                    <div style="background: #fff7ed; border: 1px solid #ff9800; padding: 10px 16px; border-radius: 8px; text-align: right;">
-                        <span style="font-size: 12px; color: #c2410c; font-weight: 600; display: block;">GRAND TOTAL</span>
-                        <span style="font-size: 18px; color: #9a3412; font-weight: 800;">Rs. ${totalSum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                    </div>
-                </div>
-
-                <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px;">
-                    <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">
-                        Application created by Yomal Lakshan
-                    </p>
                 </div>
             </div>
         `;
@@ -564,7 +472,7 @@
             tempDiv.innerHTML = generateExportHTML(fname);
 
             const opt = { 
-                margin: 6, 
+                margin: 8, 
                 filename: `${fname}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2 },
@@ -588,16 +496,15 @@
                 content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
             } else {
                 content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
-                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><kg>${r.kg}</kg><kgParts>${escapeHTML(r.kgParts)}</kgParts><value>${r.expression}</value></record>`).join('') +
+                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><value>${r.expression}</value><addedKg>${r.addedKg || 0}</addedKg><addedPieces>${r.addedPieces || 0}</addedPieces></record>`).join('') +
                     `</records>`;
             }
             contentBlob = new Blob([content], { type: mimeType });
         } else {
             mimeType = 'application/msword';
             extension = 'doc';
-            let text = `WM CALCULATOR & KG REPORT\n\n` + 
-                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression} LKR | Kg: ${r.kg} (${r.kgParts})`).join('\n') +
-                `\n\n----------------------------------------\nApplication created by Yomal Lakshan`;
+            let text = `WM CALCULATOR REPORT\n\n` + 
+                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note}: ${r.expression} ${r.addedKg ? `(+${r.addedKg}kg, ${r.addedPieces||0}pcs)` : ''}`).join('\n');
             contentBlob = new Blob([text], { type: 'text/plain' });
         }
 
@@ -605,7 +512,7 @@
             const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
-                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator Statement' });
+                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator History Report' });
                     showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
                 } catch (err) {
                     if (err.name !== 'AbortError') downloadBlob(contentBlob, `${fname}.${extension}`);
@@ -670,6 +577,138 @@
         }
     }
 
+    // History UI Rendering Engine
+    function renderHistory() {
+        savedList.innerHTML = '';
+        const searchTxt = document.getElementById('history-search').value.toLowerCase();
+
+        const filtered = savedRecords.filter(r => {
+            return r.note.toLowerCase().includes(searchTxt) || String(r.expression).includes(searchTxt);
+        });
+
+        let totalSum = 0;
+
+        if (filtered.length === 0) {
+            savedList.innerHTML = '<p style="color:#888; text-align:center; padding:15px;">දත්ත කිසිවක් හමු නොවුණි.</p>';
+        } else {
+            filtered.slice().reverse().forEach(item => {
+                const valNum = parseFloat(item.expression) || 0;
+                totalSum += valNum;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'saved-item-wrapper';
+                wrapper.innerHTML = `
+                    <div class="swipe-background swipe-bg-left">✏️ Edit</div>
+                    <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
+                    <div class="saved-item" data-id="${item.id}">
+                        <div class="saved-item-header">
+                            <span class="saved-item-title">${escapeHTML(item.note)}</span>
+                            <span class="saved-item-date">${item.date} | ${item.time}</span>
+                        </div>
+                        <div class="saved-item-body">
+                            <div class="saved-item-row">
+                                <span class="saved-item-label">අගය (Value):</span>
+                                <span class="saved-item-result">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            ${(item.addedKg || item.addedPieces) ? `
+                            <div class="added-details-box">
+                                ${item.addedKg ? `<span class="kg-tag">⚖️ එකතු කළ බර: ${item.addedKg} kg</span>` : ''}
+                                ${item.addedPieces ? `<span class="pieces-tag">📦 කෑලි: ${item.addedPieces}</span>` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
+                savedList.appendChild(wrapper);
+            });
+        }
+
+        document.getElementById('history-total-val').innerText = totalSum.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    }
+
+    /* Swipe Gesture Engine (Right Swipe = Edit, Left Swipe = Delete) */
+    function setupSwipeGesture(element, item) {
+        let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
+
+        const start = (e) => { 
+            startX = e.touches ? e.touches[0].clientX : e.clientX; 
+            startY = e.touches ? e.touches[0].clientY : e.clientY;
+            isSwiping = true; 
+            isScrolling = false;
+            element.style.transition = 'none'; 
+        };
+
+        const move = (e) => {
+            if (!isSwiping) return;
+            
+            let touchX = e.touches ? e.touches[0].clientX : e.clientX;
+            let touchY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            currentX = touchX - startX;
+            currentY = touchY - startY;
+
+            if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
+                isScrolling = true;
+                element.style.transform = 'translateX(0)';
+                return;
+            }
+
+            if (isScrolling) return;
+
+            if (currentX > 110) currentX = 110;
+            if (currentX < -110) currentX = -110;
+            element.style.transform = `translateX(${currentX}px)`;
+        };
+
+        const end = () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            element.style.transition = 'transform 0.2s ease-out';
+
+            if (!isScrolling) {
+                // Right Swipe -> EDIT POPUP
+                if (currentX > 60) {
+                    element.style.transform = 'translateX(0)';
+                    editingRecordId = item.id;
+                    document.getElementById('edit-note').value = item.note || '';
+                    document.getElementById('edit-expression').value = item.expression || '';
+                    document.getElementById('edit-added-kg').value = item.addedKg || '';
+                    document.getElementById('edit-added-pieces').value = item.addedPieces || '';
+                    editModal.classList.remove('hidden');
+                } 
+                // Left Swipe -> DELETE ITEM
+                else if (currentX < -60) {
+                    element.style.transform = 'translateX(0)';
+                    showConfirmDialog(
+                        'මකා දැමීම', 
+                        `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
+                        () => {
+                            savedRecords = savedRecords.filter(r => r.id !== item.id);
+                            saveToStorage(); 
+                            renderHistory();
+                            showToast('දත්තය මකා දමන ලදී!', 'info');
+                        }
+                    );
+                } else {
+                    element.style.transform = 'translateX(0)';
+                }
+            }
+            currentX = 0;
+            currentY = 0;
+        };
+
+        if ('ontouchstart' in window) {
+            element.addEventListener('touchstart', start, {passive:true});
+            element.addEventListener('touchmove', move, {passive:true});
+            element.addEventListener('touchend', end);
+        } else {
+            element.addEventListener('mousedown', start);
+            element.addEventListener('mousemove', (e) => isSwiping && move(e));
+            element.addEventListener('mouseup', end);
+        }
+    }
+
     function exportBackupJSON() {
         const blob = new Blob([JSON.stringify(savedRecords, null, 2)], { type: 'application/json' });
         downloadBlob(blob, `wm_calc_backup_${Date.now()}.json`);
@@ -696,180 +735,32 @@
     }
 
     function setupSearchableSuggestions() {
-        function showSuggestions(inputElem, boxElem) {
-            const text = inputElem.value;
+        function showSuggestions(text) {
             const unique = [...new Set(savedRecords.map(i => i.note))].filter(n => n && n.toLowerCase().includes(text.toLowerCase()));
-            boxElem.innerHTML = '';
-            if (!unique.length) { boxElem.classList.add('hidden'); return; }
+            suggestionsBox.innerHTML = '';
+            if (!unique.length) { suggestionsBox.classList.add('hidden'); return; }
             unique.forEach(n => {
                 const d = document.createElement('div');
                 d.className = 'suggestion-item'; d.innerText = n;
                 d.addEventListener('click', () => { 
-                    inputElem.value = n; 
-                    boxElem.classList.add('hidden'); 
+                    calcNote.value = n; 
+                    suggestionsBox.classList.add('hidden'); 
                 });
-                boxElem.appendChild(d);
+                suggestionsBox.appendChild(d);
             });
-            boxElem.classList.remove('hidden');
+            suggestionsBox.classList.remove('hidden');
         }
-
-        const sugg1 = document.getElementById('custom-suggestions');
-        const sugg2 = document.getElementById('kg-suggestions');
         
-        calcNote.addEventListener('focus', () => showSuggestions(calcNote, sugg1));
-        calcNote.addEventListener('input', () => showSuggestions(calcNote, sugg1));
-
-        kgItemName.addEventListener('focus', () => showSuggestions(kgItemName, sugg2));
-        kgItemName.addEventListener('input', () => showSuggestions(kgItemName, sugg2));
+        calcNote.addEventListener('focus', () => showSuggestions(calcNote.value));
+        calcNote.addEventListener('input', () => showSuggestions(calcNote.value));
 
         document.addEventListener('click', (e) => {
-            if (!calcNote.contains(e.target) && !sugg1.contains(e.target)) sugg1.classList.add('hidden');
-            if (!kgItemName.contains(e.target) && !sugg2.contains(e.target)) sugg2.classList.add('hidden');
-        });
-    }
-
-    function setupSettings() {
-        const settingsBtn = document.getElementById('settings-btn');
-        const themeSelect = document.getElementById('theme-select');
-        const soundToggle = document.getElementById('sound-toggle');
-        const volumeInput = document.getElementById('player-volume');
-
-        if (settingsBtn) settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
-        document.getElementById('close-settings-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
-        document.getElementById('close-settings-x').addEventListener('click', () => settingsModal.classList.add('hidden'));
-
-        if (themeSelect) {
-            themeSelect.value = currentTheme;
-            themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
-        }
-
-        if (soundToggle) {
-            soundToggle.addEventListener('change', (e) => {
-                soundEnabled = e.target.checked;
-                localStorage.setItem('wm_calc_sound', soundEnabled);
-            });
-        }
-
-        if (volumeInput) {
-            volumeInput.addEventListener('input', (e) => {
-                initAudioContext();
-                if (masterGain && audioCtx) {
-                    masterGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime);
-                }
-            });
-        }
-
-        document.getElementById('player-play-btn').addEventListener('click', () => isAudioPlaying ? stopMusic() : startMusic());
-        document.getElementById('player-next-btn').addEventListener('click', () => {
-            currentSongIndex = (currentSongIndex + 1) % songPlaylist.length;
-            currentPatternIndex = 0;
-            updatePlayerUI();
-        });
-        document.getElementById('player-prev-btn').addEventListener('click', () => {
-            currentSongIndex = (currentSongIndex - 1 + songPlaylist.length) % songPlaylist.length;
-            currentPatternIndex = 0;
-            updatePlayerUI();
-        });
-
-        document.getElementById('export-json-btn').addEventListener('click', exportBackupJSON);
-        document.getElementById('import-json-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
-        document.getElementById('import-file-input').addEventListener('change', importBackupJSON);
-    }
-
-    function applyTheme(theme) {
-        currentTheme = theme;
-        localStorage.setItem('wm_calc_theme', theme);
-        document.body.className = theme;
-    }
-
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('current-date').innerText = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-        document.getElementById('current-time').innerText = now.toLocaleTimeString();
-    }
-
-    function initAudioContext() {
-        if (!audioCtx) {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (AudioContextClass) {
-                audioCtx = new AudioContextClass();
-                masterGain = audioCtx.createGain();
-                const vol = parseFloat(document.getElementById('player-volume').value) || 0.5;
-                masterGain.gain.setValueAtTime(vol, audioCtx.currentTime);
-                masterGain.connect(audioCtx.destination);
-            }
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-    }
-
-    function triggerVisualizer() {
-        const bars = document.querySelectorAll('.v-bar');
-        bars.forEach(bar => {
-            if (isAudioPlaying) {
-                const h = Math.floor(Math.random() * 14) + 4;
-                bar.style.height = `${h}px`;
-            } else {
-                bar.style.height = '4px';
+            if (!calcNote.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.add('hidden');
             }
         });
-    }
-
-    function playNextMelodyStep() {
-        if (!isAudioPlaying) return;
-        initAudioContext();
-        if (!audioCtx) return;
-
-        const currentSong = songPlaylist[currentSongIndex];
-        const freq = currentSong.pattern[currentPatternIndex];
-        currentPatternIndex = (currentPatternIndex + 1) % currentSong.pattern.length;
-
-        try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-            gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
-
-            osc.connect(gain);
-            gain.connect(masterGain);
-
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-            triggerVisualizer();
-        } catch (e) {}
-
-        audioLoopTimer = setTimeout(playNextMelodyStep, currentSong.speed);
-    }
-
-    function startMusic() {
-        initAudioContext();
-        if (!isAudioPlaying) {
-            isAudioPlaying = true;
-            updatePlayerUI();
-            playNextMelodyStep();
-        }
-    }
-
-    function stopMusic() {
-        isAudioPlaying = false;
-        if (audioLoopTimer) clearTimeout(audioLoopTimer);
-        triggerVisualizer();
-        updatePlayerUI();
-    }
-
-    function updatePlayerUI() {
-        const songTitleElem = document.getElementById('player-song-title');
-        const playBtn = document.getElementById('player-play-btn');
-        if (songTitleElem) songTitleElem.innerText = songPlaylist[currentSongIndex].title;
-        if (playBtn) playBtn.innerText = isAudioPlaying ? '⏸️' : '▶️';
     }
 
     function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords)); }
-    function escapeHTML(str) { return String(str || '').replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
+    function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
 })();
