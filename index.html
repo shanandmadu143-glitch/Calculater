@@ -68,12 +68,15 @@
         </div>
     </div>
 
-    <!-- History Modal -->
+    <!-- Saved History Modal -->
     <div id="saved-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content history-modal-content">
             <div class="modal-header">
-                <h3>Saved History</h3>
-                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
+                <h3>📜 Saved History</h3>
+                <div class="modal-header-actions">
+                    <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
+                    <span id="close-history-x" class="close-x">&times;</span>
+                </div>
             </div>
 
             <div class="history-controls">
@@ -95,28 +98,36 @@
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>සංස්කරණය (Edit)</h3>
+                <h3>✏️ සංස්කරණය (Edit Record)</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label for="edit-note">විස්තරය / Note:</label>
-                <input type="text" id="edit-note">
-                
-                <label for="edit-expression">ප්‍රධාන අගය / Primary Value:</label>
-                <input type="text" id="edit-expression">
+                <label for="edit-note">විස්තරය / Item Name:</label>
+                <input type="text" id="edit-note" placeholder="විස්තරය ඇතුළත් කරන්න">
 
-                <hr class="form-divider">
-                <span class="section-subtitle">➕ අලුතින් එකතු කිරීම (Addition)</span>
+                <label for="edit-expression">මුලික අගය / Base Value:</label>
+                <input type="number" id="edit-expression" step="any" placeholder="0.00">
 
-                <label for="edit-added-kg">අලුතින් එකතු කරන බර (kg වලින්):</label>
-                <input type="number" id="edit-added-kg" step="any" placeholder="උදා: 10.5">
+                <!-- Edit කිරිමෙදි පමනක් අලුතින් එකතු කරන ගණන සහ කෑලි ගණන -->
+                <div class="extra-edit-fields">
+                    <div class="field-group">
+                        <label for="edit-add-kg">⚖️ අලුතින් එකතු කරන බර (kg):</label>
+                        <input type="number" id="edit-add-kg" step="any" placeholder="0.00 kg">
+                    </div>
+                    <div class="field-group">
+                        <label for="edit-pieces">🧩 සෑදීමට ගිය කෑලි ගණන:</label>
+                        <input type="number" id="edit-pieces" step="1" placeholder="0 කෑලි">
+                    </div>
+                </div>
 
-                <label for="edit-added-pieces">කෑලි ගණන (Pieces):</label>
-                <input type="number" id="edit-added-pieces" placeholder="උදා: 5">
+                <div class="edit-summary-box">
+                    <span>නව මුළු එකතුව:</span>
+                    <strong id="edit-calculated-total">0.00</strong>
+                </div>
 
                 <div class="modal-actions icon-actions">
-                    <button id="save-edit-btn" class="action-btn save icon-only" title="Save Changes">💾 Save</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️ Cancel</button>
+                    <button id="save-edit-btn" class="action-btn save" title="Save Changes">💾 Save Changes</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel" title="Cancel">✖️ Cancel</button>
                 </div>
             </div>
         </div>
@@ -126,7 +137,7 @@
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Export & Share</h3>
+                <h3>📥 Export & Share</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
