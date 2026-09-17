@@ -70,59 +70,78 @@
 
     <!-- Saved History Modal -->
     <div id="saved-modal" class="modal hidden">
-        <div class="modal-content history-modal-content">
+        <div class="modal-content modal-large">
             <div class="modal-header">
                 <h3>📜 Saved History</h3>
                 <div class="modal-header-actions">
-                    <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
-                    <span id="close-history-x" class="close-x">&times;</span>
+                    <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️ Clear All</button>
+                    <span id="close-saved-x" class="close-x">&times;</span>
                 </div>
             </div>
 
             <div class="history-controls">
-                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search note or amount)...">
             </div>
 
+            <div class="swipe-hint-bar">
+                <span>👉 දකුණට Swipe: <b>Edit</b></span>
+                <span>👈 වමට Swipe: <b>Delete</b></span>
+            </div>
+
+            <!-- Scrollable Saved List Container -->
             <div id="saved-list" class="saved-list"></div>
 
             <div class="history-total-box">
-                <span>මුළු එකතුව (Total):</span>
+                <span>මුළු එකතුව (Grand Total):</span>
                 <span id="history-total-val">0.00</span>
             </div>
 
-            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ Close</button>
+            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ වසන්න (Close)</button>
         </div>
     </div>
 
-    <!-- Edit Record Modal -->
+    <!-- Enhanced Edit Record Modal -->
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✏️ සංස්කරණය (Edit Record)</h3>
+                <h3>✏️ සංස්කරණය (Edit Item)</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label for="edit-note">විස්තරය / Item Name:</label>
-                <input type="text" id="edit-note" placeholder="විස්තරය ඇතුළත් කරන්න">
+                <div class="form-group">
+                    <label for="edit-note">විස්තරය / Note Name:</label>
+                    <input type="text" id="edit-note" placeholder="නම / විස්තරය">
+                </div>
 
-                <label for="edit-expression">මුලික අගය / Base Value:</label>
-                <input type="number" id="edit-expression" step="any" placeholder="0.00">
+                <div class="form-group">
+                    <label for="edit-expression">මුල් අගය (Base Value):</label>
+                    <input type="number" step="any" id="edit-expression" placeholder="0.00">
+                </div>
 
-                <!-- Edit කිරිමෙදි පමනක් අලුතින් එකතු කරන ගණන සහ කෑලි ගණන -->
-                <div class="extra-edit-fields">
-                    <div class="field-group">
-                        <label for="edit-add-kg">⚖️ අලුතින් එකතු කරන බර (kg):</label>
-                        <input type="number" id="edit-add-kg" step="any" placeholder="0.00 kg">
+                <!-- Addition Section (Only Available During Edit) -->
+                <div class="addition-card">
+                    <div class="addition-card-title">➕ අලුතින් එකතු කිරීම (Addition)</div>
+                    
+                    <div class="form-group margin-top-8">
+                        <label for="edit-add-kg">අලුතින් එකතු කරන ගණන (kg):</label>
+                        <div class="input-with-unit">
+                            <input type="number" step="any" id="edit-add-kg" placeholder="0.00">
+                            <span class="unit-badge">kg</span>
+                        </div>
                     </div>
-                    <div class="field-group">
-                        <label for="edit-pieces">🧩 සෑදීමට ගිය කෑලි ගණන:</label>
-                        <input type="number" id="edit-pieces" step="1" placeholder="0 කෑලි">
+
+                    <div class="form-group margin-top-8">
+                        <label for="edit-pieces">එකතු කිරීමට ගිය කෑලි ගණන (Pieces):</label>
+                        <div class="input-with-unit">
+                            <input type="number" step="1" id="edit-pieces" placeholder="0">
+                            <span class="unit-badge">කෑලි</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="edit-summary-box">
+                <div class="edit-total-preview">
                     <span>නව මුළු එකතුව:</span>
-                    <strong id="edit-calculated-total">0.00</strong>
+                    <strong id="edit-live-total">0.00</strong>
                 </div>
 
                 <div class="modal-actions icon-actions">
@@ -137,7 +156,7 @@
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📥 Export & Share</h3>
+                <h3>📥 Export & Share Report</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
