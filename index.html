@@ -68,65 +68,51 @@
         </div>
     </div>
 
-    <!-- History Modal (Modern UI & Scrollable) -->
+    <!-- Saved History Modal -->
     <div id="saved-modal" class="modal hidden">
         <div class="modal-content history-modal-content">
             <div class="modal-header">
                 <h3>📜 Saved History</h3>
-                <div class="header-actions">
-                    <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
-                    <span id="close-history-x" class="close-x">&times;</span>
-                </div>
+                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
             </div>
 
             <div class="history-controls">
-                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search Name / Amount)...">
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search)...">
             </div>
 
-            <div class="swipe-hint">
-                <span>👉 දකුණට Swipe: Edit (KG & Pieces)</span> | 
-                <span>👈 වමට Swipe: Delete</span>
-            </div>
-
-            <!-- Scrollable History List -->
+            <!-- Scrollable Saved List Container -->
             <div id="saved-list" class="saved-list"></div>
 
-            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ වසන්න (Close)</button>
+            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ Close</button>
         </div>
     </div>
 
-    <!-- Edit Record Modal (KG & Pieces Edit Options) -->
+    <!-- Edit Record Modal (Amount + Amount KG + Pieces) -->
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>✏️ සංස්කරණය (Edit Item)</h3>
+                <h3>✏️ සංස්කරණය (Edit Record)</h3>
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label for="edit-note">විස්තරය / නම (Note):</label>
+                <label for="edit-note">විස්තරය / නම (Name):</label>
                 <input type="text" id="edit-note" placeholder="නම ඇතුළත් කරන්න">
 
-                <label for="edit-amount">මුල් අගය (Amount):</label>
-                <input type="number" step="any" id="edit-amount" placeholder="මුල් ගණන">
+                <label for="edit-expression">මුල් අගය (Amount):</label>
+                <input type="number" step="any" id="edit-expression" placeholder="මුල් ගණන">
 
-                <div class="edit-separator"></div>
-                <div class="edit-subtitle">⚖️ අලුතින් එකතු කරන ගණන (KG & Pieces):</div>
+                <div class="kg-section-box">
+                    <span class="section-title">⚖️ අලුතින් එකතු කරන ගණන (KG & Pieces)</span>
+                    <label for="edit-amount-kg">අගය (KG වලින්):</label>
+                    <input type="number" step="any" id="edit-amount-kg" placeholder="උදා: 10.5">
 
-                <label for="edit-amount-kg">අලුත් ගණන (Amount KG):</label>
-                <div class="input-with-unit">
-                    <input type="number" step="any" id="edit-amount-kg" placeholder="උදා: 25.5">
-                    <span class="unit-label">KG</span>
-                </div>
-
-                <label for="edit-pieces">එම ගණන සෑදීමට ගිය කෑලි ගණන (Pieces):</label>
-                <div class="input-with-unit">
-                    <input type="number" id="edit-pieces" placeholder="උදා: 12">
-                    <span class="unit-label">Pcs</span>
+                    <label for="edit-pieces">කෑලි ගණන (Pieces Count):</label>
+                    <input type="number" step="1" id="edit-pieces" placeholder="උදා: 15">
                 </div>
 
                 <div class="modal-actions icon-actions">
                     <button id="save-edit-btn" class="action-btn save" title="Save Changes">💾 Save</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel" title="Cancel">✖️ Cancel</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel icon-only" title="Cancel">✖️</button>
                 </div>
             </div>
         </div>
@@ -152,7 +138,7 @@
                 <div class="modal-actions icon-actions">
                     <button id="confirm-download-btn" class="action-btn export">⬇️ Download</button>
                     <button id="confirm-share-btn" class="action-btn share">🔗 Share</button>
-                    <button id="cancel-download-btn" class="action-btn cancel">✖️ Cancel</button>
+                    <button id="cancel-download-btn" class="action-btn cancel icon-only">✖️</button>
                 </div>
             </div>
         </div>
