@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="theme-dark">
-    <!-- Notification Toast Container -->
+    <!-- Animated Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
     <div class="calculator-container">
@@ -38,7 +38,7 @@
         <div class="action-bar-grid">
             <button id="save-btn" class="action-btn save" title="දත්ත සුරකින්න">💾 Save</button>
             <button id="view-btn" class="action-btn view icon-only" title="History බලන්න">📜</button>
-            <button id="download-btn" class="action-btn export icon-only" title="Export / Download">📥</button>
+            <button id="download-btn" class="action-btn export icon-only" title="Export / Share">📥</button>
         </div>
 
         <!-- Keypad Grid -->
@@ -68,30 +68,34 @@
         </div>
     </div>
 
-    <!-- Saved History Modal -->
+    <!-- History Modal (Modern UI & Scrollable) -->
     <div id="saved-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content history-modal-content">
             <div class="modal-header">
                 <h3>📜 Saved History</h3>
-                <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
+                <div class="header-actions">
+                    <button id="clear-all-btn" class="danger-btn icon-only-sm" title="සියල්ල මකන්න">🗑️</button>
+                    <span id="close-history-x" class="close-x">&times;</span>
+                </div>
             </div>
 
             <div class="history-controls">
-                <input type="text" id="history-search" placeholder="🔍 නම හෝ අගය සූදන්න (Search)...">
+                <input type="text" id="history-search" placeholder="🔍 සෙවුම (Search Name / Amount)...">
             </div>
 
-            <div class="swipe-hint-banner">
-                👉 දකුණට Swap: Edit | 👈 වමට Swap: Delete
+            <div class="swipe-hint">
+                <span>👉 දකුණට Swipe: Edit (KG & Pieces)</span> | 
+                <span>👈 වමට Swipe: Delete</span>
             </div>
 
-            <!-- Scrollable Smooth Items List -->
+            <!-- Scrollable History List -->
             <div id="saved-list" class="saved-list"></div>
 
-            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ Close</button>
+            <button id="close-modal-btn" class="close-btn margin-top-10">✖️ වසන්න (Close)</button>
         </div>
     </div>
 
-    <!-- Edit Record Modal -->
+    <!-- Edit Record Modal (KG & Pieces Edit Options) -->
     <div id="edit-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -99,39 +103,40 @@
                 <span id="close-edit-btn" class="close-x">&times;</span>
             </div>
             <div class="edit-form">
-                <label for="edit-note">විස්තරය / නම (Name):</label>
+                <label for="edit-note">විස්තරය / නම (Note):</label>
                 <input type="text" id="edit-note" placeholder="නම ඇතුළත් කරන්න">
 
                 <label for="edit-amount">මුල් අගය (Amount):</label>
-                <input type="number" step="any" id="edit-amount" placeholder="0.00">
+                <input type="number" step="any" id="edit-amount" placeholder="මුල් ගණන">
 
-                <!-- New Secondary Fields for KG and Pieces -->
-                <div class="edit-sub-section">
-                    <div class="section-title">⚖️ අලුතින් එකතු කරන ප්‍රමාණයන්</div>
-                    
-                    <label for="edit-amount-kg">අලුත් අගය (Amount KG):</label>
-                    <div class="input-unit-wrapper">
-                        <input type="number" step="any" id="edit-amount-kg" placeholder="0.00">
-                        <span class="unit-tag">kg</span>
-                    </div>
+                <div class="edit-separator"></div>
+                <div class="edit-subtitle">⚖️ අලුතින් එකතු කරන ගණන (KG & Pieces):</div>
 
-                    <label for="edit-pieces">කෑලි ගණන (Pieces / Qty):</label>
-                    <input type="number" id="edit-pieces" placeholder="කෑලි ගණන (උදා: 5)">
+                <label for="edit-amount-kg">අලුත් ගණන (Amount KG):</label>
+                <div class="input-with-unit">
+                    <input type="number" step="any" id="edit-amount-kg" placeholder="උදා: 25.5">
+                    <span class="unit-label">KG</span>
+                </div>
+
+                <label for="edit-pieces">එම ගණන සෑදීමට ගිය කෑලි ගණන (Pieces):</label>
+                <div class="input-with-unit">
+                    <input type="number" id="edit-pieces" placeholder="උදා: 12">
+                    <span class="unit-label">Pcs</span>
                 </div>
 
                 <div class="modal-actions icon-actions">
-                    <button id="save-edit-btn" class="action-btn save">💾 Save Changes</button>
-                    <button id="cancel-edit-btn" class="action-btn cancel">✖️ Cancel</button>
+                    <button id="save-edit-btn" class="action-btn save" title="Save Changes">💾 Save</button>
+                    <button id="cancel-edit-btn" class="action-btn cancel" title="Cancel">✖️ Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Export & Download Modal -->
+    <!-- Export & Share Modal -->
     <div id="download-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>📥 Export & Download</h3>
+                <h3>📥 Export & Share</h3>
                 <span id="close-download-btn" class="close-x">&times;</span>
             </div>
             <div class="export-form">
@@ -147,6 +152,7 @@
                 <div class="modal-actions icon-actions">
                     <button id="confirm-download-btn" class="action-btn export">⬇️ Download</button>
                     <button id="confirm-share-btn" class="action-btn share">🔗 Share</button>
+                    <button id="cancel-download-btn" class="action-btn cancel">✖️ Cancel</button>
                 </div>
             </div>
         </div>
@@ -163,19 +169,44 @@
                 <div class="setting-item">
                     <span>Theme</span>
                     <select id="theme-select">
-                        <option value="theme-dark">🌙 Dark Cyber</option>
-                        <option value="theme-light">☀️ Modern Light</option>
-                        <option value="theme-neon">⚡ Neon Glow</option>
-                        <option value="theme-emerald">🌿 Emerald Forest</option>
+                        <option value="theme-dark">🌙 Dark Mode</option>
+                        <option value="theme-light">☀️ Light Mode</option>
+                        <option value="theme-neon">⚡ Neon Cyber</option>
+                        <option value="theme-emerald">🌿 Emerald Green</option>
                     </select>
                 </div>
 
                 <div class="setting-item">
-                    <span>Key Sound & Haptic</span>
+                    <span>Key Sounds</span>
                     <label class="switch">
                         <input type="checkbox" id="sound-toggle" checked>
                         <span class="slider round"></span>
                     </label>
+                </div>
+
+                <div class="setting-item flex-col align-start">
+                    <span>Music Player 🎵</span>
+                    <div class="music-player-box">
+                        <div id="player-song-title" class="song-title">2026 Sinhala Hit 01</div>
+                        <div id="audio-visualizer" class="visualizer-container">
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
+                            <div class="v-bar"></div>
+                        </div>
+
+                        <div class="player-controls">
+                            <button id="player-prev-btn" class="player-btn">⏮️</button>
+                            <button id="player-play-btn" class="player-btn play-btn">▶️</button>
+                            <button id="player-next-btn" class="player-btn">⏭️</button>
+                        </div>
+
+                        <div class="volume-box">
+                            <span>🔊</span>
+                            <input type="range" id="player-volume" min="0" max="1" step="0.05" value="0.5">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="setting-item flex-col align-start">
