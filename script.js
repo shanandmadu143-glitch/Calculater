@@ -10,7 +10,7 @@
     let currentTheme = localStorage.getItem('wm_calc_theme') || 'theme-dark';
     let soundEnabled = localStorage.getItem('wm_calc_sound') !== 'false';
 
-    // Synth Audio Engine
+    // Synth Audio Engine Settings
     let audioCtx = null;
     let masterGain = null;
     let isAudioPlaying = false;
@@ -55,7 +55,7 @@
         if (sToggle) sToggle.checked = soundEnabled;
     }
 
-    /* Animated Toast Notification Alert */
+    /* Animated Auto-Dismiss Toast Notification System */
     function showToast(message, type = 'success', duration = 3000) {
         let container = document.getElementById('toast-container');
         if (!container) {
@@ -158,6 +158,7 @@
 
     function playNextMelodyStep() {
         if (!isAudioPlaying) return;
+
         initAudioContext();
         if (!audioCtx) return;
 
@@ -173,7 +174,7 @@
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
 
             gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
+            gain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
             gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
 
             osc.connect(gain);
@@ -285,10 +286,10 @@
             else if (action === 'calculate') calculateResult();
         });
 
-        // Save Button Handler
+        /* Save Button Handling */
         document.getElementById('save-btn').addEventListener('click', () => {
             let resultValStr = display.value.trim().replace(/,/g, '');
-            const note = calcNote.value.trim() || 'General Item';
+            const note = calcNote.value.trim() || 'General Calculation';
 
             if (!resultValStr || resultValStr === 'Error') {
                 showToast('කරුණාකර නිවැරදි ගණනය කිරීමක් ඇතුළත් කරන්න!', 'warning');
@@ -305,20 +306,34 @@
             const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             const formattedTime = now.toLocaleTimeString();
 
-            const record = {
-                id: Date.now(),
-                date: formattedDate,
-                time: formattedTime,
-                note: note,
-                amount: newValue,
-                amountKg: '',
-                pieces: ''
-            };
+            // Search for existing record by same note name
+            const existingIndex = savedRecords.findIndex(r => r.note.toLowerCase() === note.toLowerCase());
 
-            savedRecords.push(record);
+            if (existingIndex !== -1) {
+                // Accumulate to existing record Amount
+                const currentVal = parseFloat(savedRecords[existingIndex].expression) || 0;
+                const updatedVal = currentVal + newValue;
+
+                savedRecords[existingIndex].expression = updatedVal.toString();
+                savedRecords[existingIndex].date = formattedDate;
+                savedRecords[existingIndex].time = formattedTime;
+
+                showToast(`➕ '${note}' සඳහා පැරණි ගණනට අලුත් අගය එකතු විය! (${currentVal.toLocaleString('en-US')} + ${newValue.toLocaleString('en-US')} = ${updatedVal.toLocaleString('en-US')})`, 'info');
+            } else {
+                const record = {
+                    id: Date.now(),
+                    date: formattedDate,
+                    time: formattedTime,
+                    note: note,
+                    expression: newValue.toString(),
+                    amountKg: 0,
+                    pieces: 0
+                };
+                savedRecords.push(record);
+                showToast('🎉 සාර්ථකව සුරකින ලදී!', 'success');
+            }
+
             saveToStorage();
-
-            showToast('🎉 සාර්ථකව සුරකින ලදී!', 'success');
             calcNote.value = '';
             display.value = '';
             livePreview.innerText = '';
@@ -330,7 +345,6 @@
         });
 
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
-        document.getElementById('close-history-x').addEventListener('click', () => savedModal.classList.add('hidden'));
         document.getElementById('history-search').addEventListener('input', renderHistory);
 
         document.getElementById('clear-all-btn').addEventListener('click', () => {
@@ -346,21 +360,20 @@
             );
         });
 
-        // Edit Modal Events
+        /* Close Edit Modal */
         document.getElementById('close-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
         document.getElementById('cancel-edit-btn').addEventListener('click', () => editModal.classList.add('hidden'));
 
+        /* Save Edit Modal Action */
         document.getElementById('save-edit-btn').addEventListener('click', () => {
             if (!editingRecordId) return;
+            const newNote = document.getElementById('edit-note').value.trim() || 'Calculation';
+            const newExpr = document.getElementById('edit-expression').value.trim();
+            const newKg = parseFloat(document.getElementById('edit-amount-kg').value) || 0;
+            const newPieces = parseInt(document.getElementById('edit-pieces').value, 10) || 0;
 
-            const newNote = document.getElementById('edit-note').value.trim() || 'General Item';
-            const newAmountStr = document.getElementById('edit-amount').value.trim();
-            const newKgStr = document.getElementById('edit-amount-kg').value.trim();
-            const newPiecesStr = document.getElementById('edit-pieces').value.trim();
-
-            const parsedAmount = parseFloat(newAmountStr);
-            if (isNaN(parsedAmount)) {
-                showToast('මුල් අගය නිවැරදිව ඇතුළත් කරන්න!', 'error');
+            if (!newExpr || isNaN(parseFloat(newExpr))) {
+                showToast('කරුණාකර නිවැරදි මුල් අගයක් ඇතුළත් කරන්න!', 'warning');
                 return;
             }
 
@@ -369,9 +382,9 @@
                     return {
                         ...r,
                         note: newNote,
-                        amount: parsedAmount,
-                        amountKg: newKgStr !== '' ? parseFloat(newKgStr) : '',
-                        pieces: newPiecesStr !== '' ? parseInt(newPiecesStr, 10) : ''
+                        expression: parseFloat(newExpr).toString(),
+                        amountKg: newKg,
+                        pieces: newPieces
                     };
                 }
                 return r;
@@ -380,10 +393,9 @@
             saveToStorage();
             editModal.classList.add('hidden');
             renderHistory();
-            showToast('සංස්කරණය සාර්ථකයි!', 'success');
+            showToast('සංස්කරණය කිරීම සාර්ථකයි!', 'success');
         });
 
-        // Export Modal Events
         document.getElementById('download-btn').addEventListener('click', () => {
             if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
             document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
@@ -397,30 +409,23 @@
         document.getElementById('confirm-share-btn').addEventListener('click', () => processExport(true));
     }
 
-    // Export HTML Template with Separate Columns for Amount and Amount KG
     function generateExportHTML(title) {
         const rows = savedRecords.map((r, index) => {
-            const amountVal = (typeof r.amount === 'number' && !isNaN(r.amount)) 
-                ? r.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) 
-                : '0.00';
+            const valNum = parseFloat(r.expression) || 0;
+            const kgVal = parseFloat(r.amountKg) || 0;
+            const piecesVal = parseInt(r.pieces, 10) || 0;
 
-            let kgValDisplay = '-';
-            if (r.amountKg !== '' && r.amountKg !== null && r.amountKg !== undefined) {
-                const numKg = parseFloat(r.amountKg);
-                if (!isNaN(numKg)) {
-                    kgValDisplay = `${numKg.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} kg`;
-                    if (r.pieces !== '' && r.pieces !== null && r.pieces !== undefined) {
-                        kgValDisplay += ` (${r.pieces} pcs)`;
-                    }
-                }
+            let kgDisplay = '-';
+            if (kgVal > 0) {
+                kgDisplay = `${kgVal.toLocaleString('en-US')} kg` + (piecesVal > 0 ? ` (කෑලි ${piecesVal})` : '');
             }
 
             return `
                 <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'};">
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 12px;">${r.date} <br><span style="color:#9ca3af; font-size:11px;">${r.time}</span></td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #4b5563; font-size: 13px;">${r.date} <br><span style="color:#9ca3af; font-size:11px;">${r.time}</span></td>
                     <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: 700; font-size: 14px;">${escapeHTML(r.note)}</td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #1e40af; font-weight: 700; font-size: 14px; text-align: right;">${amountVal}</td>
-                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #047857; font-weight: 700; font-size: 14px; text-align: right;">${kgValDisplay}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #2563eb; font-weight: 700; font-size: 15px; text-align: right;">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; color: #059669; font-weight: 700; font-size: 14px; text-align: right;">${kgDisplay}</td>
                 </tr>
             `;
         }).join('');
@@ -430,11 +435,11 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #ff9800; padding-bottom: 15px; margin-bottom: 20px;">
                     <div>
                         <h1 style="margin: 0; color: #111827; font-size: 24px; font-weight: 800;">WM CALCULATOR PRO</h1>
-                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Itemized Detailed Report</p>
+                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">Calculation Statement & History Report</p>
                     </div>
                     <div style="text-align: right; color: #6b7280; font-size: 12px;">
                         <div>Date: ${new Date().toLocaleDateString()}</div>
-                        <div>Total Records: ${savedRecords.length}</div>
+                        <div>Total Saved Items: ${savedRecords.length}</div>
                     </div>
                 </div>
 
@@ -442,9 +447,9 @@
                     <thead>
                         <tr style="background-color: #1f2937; color: #ffffff; text-align: left;">
                             <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Date & Time</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (Name)</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600;">Description (නම)</th>
                             <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Amount</th>
-                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Amount KG (Pcs)</th>
+                            <th style="padding: 12px 15px; font-size: 13px; font-weight: 600; text-align: right;">Amount KG (කෑලි)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -454,7 +459,7 @@
 
                 <div style="text-align: center; border-top: 1px solid #e5e7eb; padding-top: 15px;">
                     <p style="margin: 0; font-size: 12px; color: #6b7280; font-weight: 600;">
-                        Generated by WM Calculator Pro App
+                        Generated by WM Calculator Pro
                     </p>
                 </div>
             </div>
@@ -480,7 +485,7 @@
                 html2canvas: { scale: 2 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
-            
+
             if (isShare) {
                 const pdfWorker = html2pdf().set(opt).from(tempDiv);
                 contentBlob = await pdfWorker.output('blob');
@@ -498,7 +503,7 @@
                 content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${fname}</title></head><body>${generateExportHTML(fname)}</body></html>`;
             } else {
                 content = `<?xml version="1.0" encoding="UTF-8"?><records>` +
-                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><amount>${r.amount}</amount><amountKg>${r.amountKg}</amountKg><pieces>${r.pieces}</pieces></record>`).join('') +
+                    savedRecords.map(r => `<record><date>${r.date}</date><time>${r.time}</time><note>${escapeHTML(r.note)}</note><amount>${r.expression}</amount><amountKg>${r.amountKg || 0}</amountKg><pieces>${r.pieces || 0}</pieces></record>`).join('') +
                     `</records>`;
             }
             contentBlob = new Blob([content], { type: mimeType });
@@ -506,7 +511,7 @@
             mimeType = 'application/msword';
             extension = 'doc';
             let text = `WM CALCULATOR REPORT\n\n` + 
-                savedRecords.map(r => `[${r.date} ${r.time}] Name: ${r.note} | Amount: ${r.amount} | Amount KG: ${r.amountKg || '-'} (Pcs: ${r.pieces || '-'})`).join('\n') +
+                savedRecords.map(r => `[${r.date} ${r.time}] ${r.note} -> Amount: ${r.expression} | Amount KG: ${r.amountKg || 0} kg (${r.pieces || 0} pieces)`).join('\n') +
                 `\n\n----------------------------------------\nGenerated by WM Calculator Pro`;
             contentBlob = new Blob([text], { type: 'text/plain' });
         }
@@ -515,7 +520,7 @@
             const file = new File([contentBlob], `${fname}.${extension}`, { type: mimeType });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
-                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator Report' });
+                    await navigator.share({ files: [file], title: fname, text: 'WM Calculator History Report' });
                     showToast('🔗 Share කිරීම සාර්ථකයි!', 'success');
                 } catch (err) {
                     if (err.name !== 'AbortError') downloadBlob(contentBlob, `${fname}.${extension}`);
@@ -580,70 +585,64 @@
         }
     }
 
-    // Render Saved History List with Separate Amounts
+    /* Render Saved History UI List */
     function renderHistory() {
         savedList.innerHTML = '';
         const searchTxt = document.getElementById('history-search').value.toLowerCase();
 
         const filtered = savedRecords.filter(r => {
             return r.note.toLowerCase().includes(searchTxt) || 
-                   String(r.amount).includes(searchTxt) || 
-                   String(r.amountKg).includes(searchTxt);
+                   String(r.expression).includes(searchTxt) ||
+                   String(r.amountKg || '').includes(searchTxt);
         });
 
         if (filtered.length === 0) {
             savedList.innerHTML = '<p style="color:#888; text-align:center; padding:20px; font-size:13px;">දත්ත කිසිවක් හමු නොවුණි.</p>';
-            return;
-        }
+        } else {
+            filtered.slice().reverse().forEach(item => {
+                const valNum = parseFloat(item.expression) || 0;
+                const kgVal = parseFloat(item.amountKg) || 0;
+                const piecesVal = parseInt(item.pieces, 10) || 0;
 
-        filtered.slice().reverse().forEach(item => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'saved-item-wrapper';
-
-            const amountFormatted = (typeof item.amount === 'number' && !isNaN(item.amount))
-                ? item.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})
-                : '0.00';
-
-            let kgDisplayHTML = '';
-            if (item.amountKg !== '' && item.amountKg !== null && item.amountKg !== undefined) {
-                const kgNum = parseFloat(item.amountKg);
-                if (!isNaN(kgNum)) {
-                    let pcsText = (item.pieces !== '' && item.pieces !== null && item.pieces !== undefined) 
-                        ? `<span class="pieces-badge">(${item.pieces} Pcs)</span>` 
-                        : '';
-                    kgDisplayHTML = `
-                        <div class="amount-row">
-                            <span class="amount-label">Amount KG:</span>
-                            <span class="amount-val-kg">${kgNum.toLocaleString('en-US', {minimumFractionDigits: 2})} kg ${pcsText}</span>
+                const wrapper = document.createElement('div');
+                wrapper.className = 'saved-item-wrapper';
+                
+                let kgHtml = '';
+                if (kgVal > 0) {
+                    const pcsTxt = piecesVal > 0 ? ` (${piecesVal} කෑලි)` : '';
+                    kgHtml = `
+                        <div class="amount-badge kg-badge">
+                            <span class="badge-label">Amount KG:</span>
+                            <span class="badge-value-kg">⚖️ ${kgVal.toLocaleString('en-US')} kg${pcsTxt}</span>
                         </div>
                     `;
                 }
-            }
 
-            wrapper.innerHTML = `
-                <div class="swipe-background swipe-bg-left">✏️ Edit (KG & Pcs)</div>
-                <div class="swipe-background swipe-bg-right">🗑️ Delete</div>
-                <div class="saved-item" data-id="${item.id}">
-                    <div class="saved-item-header">
-                        <span class="saved-item-title">${escapeHTML(item.note)}</span>
-                        <span class="saved-item-date">${item.date} | ${item.time}</span>
-                    </div>
-                    <div class="saved-item-amounts">
-                        <div class="amount-row">
-                            <span class="amount-label">Amount:</span>
-                            <span class="amount-val-primary">${amountFormatted}</span>
+                wrapper.innerHTML = `
+                    <div class="swipe-background swipe-bg-right">✏️ Edit</div>
+                    <div class="swipe-background swipe-bg-left">🗑️ Delete</div>
+                    <div class="saved-item" data-id="${item.id}">
+                        <div class="saved-item-header">
+                            <span class="saved-item-title">${escapeHTML(item.note)}</span>
+                            <span class="saved-item-date">📅 ${item.date} | ${item.time}</span>
                         </div>
-                        ${kgDisplayHTML}
+                        <div class="saved-amounts-grid">
+                            <div class="amount-badge">
+                                <span class="badge-label">Amount:</span>
+                                <span class="badge-value">${valNum.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            ${kgHtml}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
 
-            setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
-            savedList.appendChild(wrapper);
-        });
+                setupSwipeGesture(wrapper.querySelector('.saved-item'), item);
+                savedList.appendChild(wrapper);
+            });
+        }
     }
 
-    // Direction-aware Swipe Gesture Engine (Right = Edit, Left = Delete)
+    /* Swipe Gestures: Right Swipe = Edit Modal | Left Swipe = Delete Confirm */
     function setupSwipeGesture(element, item) {
         let startX = 0, startY = 0, currentX = 0, currentY = 0, isSwiping = false, isScrolling = false;
 
@@ -657,13 +656,14 @@
 
         const move = (e) => {
             if (!isSwiping) return;
-            
+
             let touchX = e.touches ? e.touches[0].clientX : e.clientX;
             let touchY = e.touches ? e.touches[0].clientY : e.clientY;
 
             currentX = touchX - startX;
             currentY = touchY - startY;
 
+            // Allow vertical scroll if moving vertically
             if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
                 isScrolling = true;
                 element.style.transform = 'translateX(0)';
@@ -672,33 +672,32 @@
 
             if (isScrolling) return;
 
-            if (currentX > 100) currentX = 100;
-            if (currentX < -100) currentX = -100;
+            if (currentX > 110) currentX = 110;
+            if (currentX < -110) currentX = -110;
             element.style.transform = `translateX(${currentX}px)`;
         };
 
         const end = () => {
             if (!isSwiping) return;
             isSwiping = false;
-            element.style.transition = 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            element.style.transition = 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)';
 
             if (!isScrolling) {
-                // Swipe Right -> Open Edit Popup
-                if (currentX > 50) {
+                if (currentX > 60) {
+                    // Right Swipe -> Open Edit Popup
                     element.style.transform = 'translateX(0)';
                     editingRecordId = item.id;
                     document.getElementById('edit-note').value = item.note || '';
-                    document.getElementById('edit-amount').value = item.amount !== undefined ? item.amount : '';
-                    document.getElementById('edit-amount-kg').value = item.amountKg !== undefined ? item.amountKg : '';
-                    document.getElementById('edit-pieces').value = item.pieces !== undefined ? item.pieces : '';
+                    document.getElementById('edit-expression').value = item.expression || '';
+                    document.getElementById('edit-amount-kg').value = item.amountKg || '';
+                    document.getElementById('edit-pieces').value = item.pieces || '';
                     editModal.classList.remove('hidden');
-                } 
-                // Swipe Left -> Trigger Delete Confirm
-                else if (currentX < -50) {
+                } else if (currentX < -60) {
+                    // Left Swipe -> Delete Item
                     element.style.transform = 'translateX(0)';
                     showConfirmDialog(
-                        'මකා දැමීම', 
-                        `'${item.note}' දත්තය මකා දැමීමට නිසැකද?`, 
+                        'දත්තය මකා දැමීම', 
+                        `'${item.note}' දත්තය මකා දැමීමට ඔබට විශ්වාසද?`, 
                         () => {
                             savedRecords = savedRecords.filter(r => r.id !== item.id);
                             saveToStorage(); 
@@ -757,8 +756,7 @@
             if (!unique.length) { suggestionsBox.classList.add('hidden'); return; }
             unique.forEach(n => {
                 const d = document.createElement('div');
-                d.className = 'suggestion-item'; 
-                d.innerText = n;
+                d.className = 'suggestion-item'; d.innerText = n;
                 d.addEventListener('click', () => { 
                     calcNote.value = n; 
                     suggestionsBox.classList.add('hidden'); 
@@ -767,7 +765,7 @@
             });
             suggestionsBox.classList.remove('hidden');
         }
-        
+
         calcNote.addEventListener('focus', () => showSuggestions(calcNote.value));
         calcNote.addEventListener('input', () => showSuggestions(calcNote.value));
 
