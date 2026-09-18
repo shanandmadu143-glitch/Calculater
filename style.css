@@ -272,6 +272,8 @@ body {
 
 .history-modal-content {
     max-width: 440px;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
@@ -306,7 +308,7 @@ body {
     flex-direction: column;
     gap: 12px;
     margin-bottom: 14px;
-    max-height: 380px;
+    max-height: 60vh; /* Better dynamic height */
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -339,6 +341,7 @@ body {
     touch-action: pan-y;
     border: 1px solid var(--border-color);
     background: var(--item-bg);
+    flex-shrink: 0; /* Important fix for invisible squished items */
 }
 
 .swipe-background {
