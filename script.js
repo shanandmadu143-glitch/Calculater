@@ -25,7 +25,39 @@
 
     let currentPatternIndex = 0;
 
-    document.addEventListener('DOMContentLoaded', initApp);
+    document.addEventListener('DOMContentLoaded', () => {
+        initSplash();
+        initApp();
+    });
+
+    /* 🌟 4 Seconds Loading Splash Screen Animation Logic */
+    function initSplash() {
+        const splashScreen = document.getElementById('splash-screen');
+        const progressFill = document.getElementById('splash-progress-fill');
+        const percentTxt = document.getElementById('splash-percent');
+        
+        if (!splashScreen || !progressFill || !percentTxt) return;
+
+        const totalDuration = 4000; // 4 Seconds
+        const intervalTime = 40;
+        let elapsed = 0;
+
+        const timer = setInterval(() => {
+            elapsed += intervalTime;
+            const percentage = Math.min(Math.floor((elapsed / totalDuration) * 100), 100);
+            
+            progressFill.style.width = `${percentage}%`;
+            percentTxt.innerText = `${percentage}%`;
+
+            if (elapsed >= totalDuration) {
+                clearInterval(timer);
+                splashScreen.classList.add('splash-fade-out');
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 800);
+            }
+        }, intervalTime);
+    }
 
     function initApp() {
         display = document.getElementById('display');
@@ -663,7 +695,6 @@
             currentX = touchX - startX;
             currentY = touchY - startY;
 
-            // Allow vertical scroll if moving vertically
             if (!isScrolling && Math.abs(currentY) > Math.abs(currentX)) {
                 isScrolling = true;
                 element.style.transform = 'translateX(0)';
@@ -684,7 +715,6 @@
 
             if (!isScrolling) {
                 if (currentX > 60) {
-                    // Right Swipe -> Open Edit Popup
                     element.style.transform = 'translateX(0)';
                     editingRecordId = item.id;
                     document.getElementById('edit-note').value = item.note || '';
@@ -693,7 +723,6 @@
                     document.getElementById('edit-pieces').value = item.pieces || '';
                     editModal.classList.remove('hidden');
                 } else if (currentX < -60) {
-                    // Left Swipe -> Delete Item
                     element.style.transform = 'translateX(0)';
                     showConfirmDialog(
                         'දත්තය මකා දැමීම', 
@@ -779,4 +808,3 @@
     function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords)); }
     function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
 })();
-
