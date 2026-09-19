@@ -9,6 +9,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="theme-dark">
+    <!-- 🌟 Splash / Intro Loading Screen (4 Seconds) -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-bg-glow"></div>
+        <div class="splash-content">
+            <div class="splash-logo-box">
+                <span class="splash-icon">🧮</span>
+                <h1 class="splash-title">WM CALCULATOR PRO</h1>
+            </div>
+            <p class="splash-subtitle">Advanced Smart Calculation & Record Management System</p>
+            
+            <div class="splash-info-card">
+                <ul class="splash-features">
+                    <li>✨ වේගවත් සහ නිවැරදි ගණනය කිරීම්</li>
+                    <li>📝 සටහන්, බඩු ලැයිස්තු, KG සහ Pieces ප්‍රමාණ සුරැකීම</li>
+                    <li>📊 PDF, Word, XML, HTML ලෙස Reports ලබාගැනීම</li>
+                    <li>💾 Data Backup සහ Restore පහසුකම</li>
+                </ul>
+            </div>
+
+            <div class="splash-loader-container">
+                <div class="splash-spinner"></div>
+                <div class="splash-progress-bar">
+                    <div id="splash-progress-fill" class="splash-progress-fill"></div>
+                </div>
+                <span id="splash-percent" class="splash-percent">0%</span>
+            </div>
+
+            <div class="splash-footer">
+                <span>Created By <strong>Yomal Lakshan</strong></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Animated Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
 
