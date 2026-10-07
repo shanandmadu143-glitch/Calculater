@@ -1,0 +1,11 @@
+{
+  "name": "WM Calculator Pro",
+  "short_name": "WM Calculator",
+  "description": "Professional offline calculator and record management web app",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#070a10",
+  "theme_color": "#0b0e14",
+  "orientation": "portrait",
+  "lang": "si"
+}
