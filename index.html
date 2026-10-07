@@ -6,7 +6,12 @@
 <meta name="theme-color" content="#0b0e14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>WM Calculator Pro</title>
+<title>WM Calculator Pro • Professional Web App</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="application-name" content="WM Calculator Pro">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="WM Calculator Pro">
+<meta name="description" content="Professional offline calculator and record management web app">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -34,7 +39,9 @@
 <main class="app-shell">
   <header class="app-header">
     <div class="brand-block"><div class="brand-icon">🧮</div><div><div class="brand-title">WM CALCULATOR</div><div class="brand-sub">PRO • SMART RECORDS</div></div></div>
-    <div class="header-right"><div class="clock"><span id="current-date">YYYY-MM-DD</span><span id="current-time">00:00:00</span></div><button id="settings-btn" class="icon-btn" aria-label="Settings">⚙️</button></div>
+    <div class="header-right">
+      <div class="connection-status" id="connection-status" title="Connection status"><span class="status-dot"></span><span id="connection-text">Offline Ready</span></div>
+      <div class="clock"><span id="current-date">YYYY-MM-DD</span><span id="current-time">00:00:00</span></div></div>
   </header>
 
   <section class="display-container">
@@ -49,12 +56,6 @@
     <div id="custom-suggestions" class="suggestions-box hidden"></div>
   </section>
 
-  <section class="action-bar-grid">
-    <button id="save-btn" class="action-btn save">💾 <span>Save</span></button>
-    <button id="view-btn" class="action-btn view" aria-label="History">📜</button>
-    <button id="download-btn" class="action-btn export" aria-label="Export">📥</button>
-  </section>
-
   <section class="keypad-wrap">
     <div class="buttons">
       <button data-action="clear" class="btn btn-cmd">C</button><button data-action="delete" class="btn btn-cmd">⌫</button><button data-val="/" class="btn btn-op">÷</button><button data-val="*" class="btn btn-op">×</button>
@@ -66,6 +67,25 @@
   </section>
 
   <div class="app-status"><span>● Offline ready</span><span id="record-count">0 records</span></div>
+
+  <nav class="mobile-bottom-nav" aria-label="Main navigation">
+    <button class="mobile-nav-item active" data-nav="home" type="button">
+      <span class="nav-icon">⌂</span><span>Home</span>
+    </button>
+    <button class="mobile-nav-item" data-nav="history" type="button">
+      <span class="nav-icon">◷</span><span>History</span>
+    </button>
+    <button class="mobile-nav-item nav-primary" data-nav="calculator" type="button" aria-label="Calculator">
+      <span class="nav-primary-icon">＋</span>
+    </button>
+    <button class="mobile-nav-item" data-nav="export" type="button">
+      <span class="nav-icon">⇩</span><span>Export</span>
+    </button>
+    <button class="mobile-nav-item" data-nav="settings" type="button">
+      <span class="nav-icon">⚙</span><span>Settings</span>
+    </button>
+  </nav>
+
 </main>
 
 <!-- HISTORY -->
@@ -104,6 +124,24 @@
   </div>
 </div>
 
+<!-- PROFESSIONAL TOOLS -->
+<div id="app-tools-modal" class="modal hidden">
+  <div class="modal-content compact-modal">
+    <div class="modal-header">
+      <div><span class="modal-kicker">PRO TOOLS</span><h3>🛠️ App Tools</h3></div>
+      <button id="close-tools-x" class="close-x">×</button>
+    </div>
+    <div class="tools-grid">
+      <button id="install-app-btn" class="tool-card">📲<b>Install App</b><small>Install as a mobile/desktop app</small></button>
+      <button id="reset-data-btn" class="tool-card danger-tool">♻️<b>Reset Local Data</b><small>Delete saved records from this device</small></button>
+      <button id="keyboard-help-btn" class="tool-card">⌨️<b>Keyboard Shortcuts</b><small>Use your keyboard faster</small></button>
+      <button id="health-check-btn" class="tool-card">🩺<b>System Check</b><small>Check browser capabilities</small></button>
+    </div>
+    <div id="system-check-result" class="system-check-result hidden"></div>
+    <button id="close-tools-btn" class="close-btn">Done</button>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 <div id="settings-modal" class="modal hidden">
   <div class="modal-content settings-modal-content">
@@ -112,6 +150,7 @@
       <div class="setting-card"><div class="setting-title">🎨 Theme</div><select id="theme-select"><option value="theme-dark">🌙 Dark Mode</option><option value="theme-light">☀️ Light Mode</option><option value="theme-neon">⚡ Neon Cyber</option><option value="theme-emerald">🌿 Emerald Green</option></select></div>
       <div class="setting-card"><div class="setting-title">🔊 Key Sounds <label class="switch"><input type="checkbox" id="sound-toggle" checked><span class="slider round"></span></label></div></div>
       <div class="setting-card music-card"><div class="setting-title">🎵 Music Player</div><div id="player-song-title" class="song-title">2026 Sinhala Hit 01</div><div id="audio-visualizer" class="visualizer-container"><i class="v-bar"></i><i class="v-bar"></i><i class="v-bar"></i><i class="v-bar"></i><i class="v-bar"></i></div><div class="player-controls"><button id="player-prev-btn" class="player-btn">⏮</button><button id="player-play-btn" class="player-btn play-btn">▶</button><button id="player-next-btn" class="player-btn">⏭</button></div><div class="volume-box">🔊 <input type="range" id="player-volume" min="0" max="1" step="0.05" value="0.5"></div></div>
+      <div class="setting-card"><button id="open-tools-btn" class="btn-small" style="width:100%;min-height:44px">🛠️ App Tools</button></div>
       <div class="setting-card"><div class="setting-title">💾 Data Backup & Restore</div><div class="backup-actions"><button id="export-json-btn" class="btn-small">💾 Backup</button><button id="import-json-btn" class="btn-small">📂 Restore</button><input type="file" id="import-file-input" accept=".json,application/json" class="hidden"></div></div>
     </div>
     <button id="close-settings-btn" class="close-btn">Done</button>
@@ -119,5 +158,10 @@
 </div>
 
 <script src="script.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+  }
+</script>
 </body>
 </html>
