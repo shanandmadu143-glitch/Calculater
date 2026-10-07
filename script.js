@@ -61,6 +61,28 @@
         }, intervalTime);
     }
 
+
+    function initMobileNavigation() {
+        const navItems = document.querySelectorAll('.mobile-nav-item');
+        const setActive = (name) => navItems.forEach(item => item.classList.toggle('active', item.dataset.nav === name));
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const target = item.dataset.nav;
+                if (target === 'home') { setActive('home'); document.querySelector('.display-container')?.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+                if (target === 'calculator') { setActive('home'); saveCurrentCalculation(); return; }
+                if (target === 'history') { setActive('history'); renderHistory(); savedModal.classList.remove('hidden'); return; }
+                if (target === 'export') {
+                    setActive('export');
+                    if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
+                    document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
+                    downloadModal.classList.remove('hidden');
+                    return;
+                }
+                if (target === 'settings') { setActive('settings'); settingsModal.classList.remove('hidden'); }
+            });
+        });
+    }
+
     function initApp() {
         display = document.getElementById('display');
         livePreview = document.getElementById('live-preview');
@@ -80,8 +102,14 @@
 
         updateRecordCount();
         updateClock();
+        updateConnectionStatus();
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
         setInterval(updateClock, 1000);
         bindEvents();
+        setupProfessionalTools();
+        setupKeyboardCalculator();
+        hydrateIndexedDB();
         setupSearchableSuggestions();
         setupSettings();
         applyTheme(currentTheme);
@@ -196,6 +224,7 @@
         if (!isAudioPlaying) return;
 
         initAudioContext();
+        initMobileNavigation();
         if (!audioCtx) return;
 
         const currentSong = songPlaylist[currentSongIndex];
@@ -248,12 +277,10 @@
     }
 
     function setupSettings() {
-        const settingsBtn = document.getElementById('settings-btn');
         const themeSelect = document.getElementById('theme-select');
         const soundToggle = document.getElementById('sound-toggle');
         const volumeInput = document.getElementById('player-volume');
 
-        if (settingsBtn) settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
         document.getElementById('close-settings-btn').addEventListener('click', () => settingsModal.classList.add('hidden'));
         document.getElementById('close-settings-x').addEventListener('click', () => settingsModal.classList.add('hidden'));
 
@@ -322,8 +349,8 @@
             else if (action === 'calculate') calculateResult();
         });
 
-        /* Save Button Handling */
-        document.getElementById('save-btn').addEventListener('click', () => {
+        function saveCurrentCalculation() {
+
             let resultValStr = display.value.trim().replace(/,/g, '');
             const note = calcNote.value.trim() || 'General Calculation';
 
@@ -373,12 +400,7 @@
             calcNote.value = '';
             display.value = '';
             livePreview.innerText = '';
-        });
-
-        document.getElementById('view-btn').addEventListener('click', () => {
-            renderHistory();
-            savedModal.classList.remove('hidden');
-        });
+        }
 
         document.getElementById('close-modal-btn').addEventListener('click', () => savedModal.classList.add('hidden'));
         document.getElementById('history-search').addEventListener('input', () => {
@@ -442,12 +464,6 @@
             editModal.classList.add('hidden');
             renderHistory();
             showToast('සංස්කරණය කිරීම සාර්ථකයි!', 'success');
-        });
-
-        document.getElementById('download-btn').addEventListener('click', () => {
-            if (savedRecords.length === 0) return showToast('Export කිරීමට දත්ත නොමැත!', 'warning');
-            document.getElementById('export-filename').value = `WM_Report_${Date.now()}`;
-            downloadModal.classList.remove('hidden');
         });
 
         document.getElementById('close-download-btn').addEventListener('click', () => downloadModal.classList.add('hidden'));
@@ -602,13 +618,55 @@
         updateLivePreview();
     }
 
+    /* Secure arithmetic engine: no eval()/Function(), only numbers and + - * / */
+    function safeEvaluate(expression) {
+        const source = String(expression).replace(/\s+/g, '');
+        const tokens = source.match(/(?:\d+(?:\.\d+)?|\.\d+|[()+\-*/])/g);
+        if (!tokens || tokens.join('') !== source) throw new Error('Invalid expression');
+        let pos = 0;
+        function parseExpression() {
+            let value = parseTerm();
+            while (tokens[pos] === '+' || tokens[pos] === '-') {
+                const op = tokens[pos++], rhs = parseTerm();
+                value = op === '+' ? value + rhs : value - rhs;
+            }
+            return value;
+        }
+        function parseTerm() {
+            let value = parseFactor();
+            while (tokens[pos] === '*' || tokens[pos] === '/') {
+                const op = tokens[pos++], rhs = parseFactor();
+                if (op === '/' && rhs === 0) throw new Error('Division by zero');
+                value = op === '*' ? value * rhs : value / rhs;
+            }
+            return value;
+        }
+        function parseFactor() {
+            if (tokens[pos] === '+') { pos++; return parseFactor(); }
+            if (tokens[pos] === '-') { pos++; return -parseFactor(); }
+            if (tokens[pos] === '(') {
+                pos++;
+                const value = parseExpression();
+                if (tokens[pos] !== ')') throw new Error('Missing parenthesis');
+                pos++;
+                return value;
+            }
+            const token = tokens[pos++];
+            if (!token || !/^\d*\.?\d+$/.test(token)) throw new Error('Invalid number');
+            return Number(token);
+        }
+        const result = parseExpression();
+        if (pos !== tokens.length || !Number.isFinite(result)) throw new Error('Invalid calculation');
+        return result;
+    }
+
     function updateLivePreview() {
         const val = display.value.trim();
         if (!val) { livePreview.innerText = ''; return; }
         try {
             const expr = val.replace(/×/g, '*').replace(/÷/g, '/');
             if (/^[0-9+\-*/. ]+$/.test(expr)) {
-                const res = Function(`'use strict'; return (${expr})`)();
+                const res = safeEvaluate(expr);
                 if (isFinite(res)) {
                     livePreview.innerText = '= ' + Number(res).toLocaleString('en-US');
                 } else livePreview.innerText = '';
@@ -622,7 +680,7 @@
         if (!display.value.trim()) return;
         try {
             const expr = display.value.replace(/×/g, '*').replace(/÷/g, '/');
-            const res = Function(`'use strict'; return (${expr})`)();
+            const res = safeEvaluate(expr);
             if (isFinite(res)) {
                 const rounded = Math.round(res * 1e10) / 1e10;
                 display.value = rounded.toLocaleString('en-US');
@@ -836,9 +894,62 @@
         });
     }
 
+    const DB_NAME = 'wm-calculator-pro-db';
+    const DB_STORE = 'records';
+    let dbPromise = null;
+
+    function openAppDB() {
+        if (!('indexedDB' in window)) return Promise.resolve(null);
+        if (dbPromise) return dbPromise;
+        dbPromise = new Promise(resolve => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = () => {
+                const db = req.result;
+                if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'id' });
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+        });
+        return dbPromise;
+    }
+
+    async function persistIndexedDB(records = savedRecords) {
+        const db = await openAppDB();
+        if (!db) return;
+        try {
+            await new Promise((resolve, reject) => {
+                const tx = db.transaction(DB_STORE, 'readwrite');
+                const store = tx.objectStore(DB_STORE);
+                store.clear();
+                records.forEach(r => store.put(r));
+                tx.oncomplete = resolve;
+                tx.onerror = () => reject(tx.error);
+            });
+        } catch (_) {}
+    }
+
+    async function hydrateIndexedDB() {
+        const db = await openAppDB();
+        if (!db) return;
+        try {
+            const records = await new Promise((resolve, reject) => {
+                const tx = db.transaction(DB_STORE, 'readonly');
+                const req = tx.objectStore(DB_STORE).getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            });
+            if (records.length && !savedRecords.length) {
+                savedRecords = records;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
+                updateRecordCount();
+            }
+        } catch (_) {}
+    }
+
     function saveToStorage() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(savedRecords));
+            persistIndexedDB(savedRecords);
             updateRecordCount();
         } catch (err) {
             showToast('Storage එකට data save කිරීමට නොහැකි විය.', 'error');
@@ -853,6 +964,89 @@
         if (e.key !== 'Escape') return;
         [savedModal, editModal, downloadModal, settingsModal].forEach(m => m?.classList.add('hidden'));
     });
+
+    function updateConnectionStatus() {
+        const online = navigator.onLine;
+        document.body.classList.toggle('is-offline', !online);
+        const text = document.getElementById('connection-text');
+        if (text) text.textContent = online ? 'Online Ready' : 'Offline Ready';
+    }
+
+    let deferredInstallPrompt = null;
+    function setupProfessionalTools() {
+        const toolsModal = document.getElementById('app-tools-modal');
+        const openBtn = document.getElementById('open-tools-btn');
+        const closeX = document.getElementById('close-tools-x');
+        const closeBtn = document.getElementById('close-tools-btn');
+        const installBtn = document.getElementById('install-app-btn');
+        const resetBtn = document.getElementById('reset-data-btn');
+        const helpBtn = document.getElementById('keyboard-help-btn');
+        const healthBtn = document.getElementById('health-check-btn');
+        const result = document.getElementById('system-check-result');
+
+        openBtn?.addEventListener('click', () => toolsModal?.classList.remove('hidden'));
+        closeX?.addEventListener('click', () => toolsModal?.classList.add('hidden'));
+        closeBtn?.addEventListener('click', () => toolsModal?.classList.add('hidden'));
+
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+        });
+
+        installBtn?.addEventListener('click', async () => {
+            if (!deferredInstallPrompt) {
+                showToast('මෙම browser එකේ install option එක දැනට ලබාගත නොහැක.', 'info');
+                return;
+            }
+            deferredInstallPrompt.prompt();
+            await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+        });
+
+        resetBtn?.addEventListener('click', () => {
+            showConfirmDialog('Local Data Reset', 'මෙම device එකේ saved records සියල්ල මකා දැමීමට ඔබට විශ්වාසද?', async () => {
+                savedRecords = [];
+                localStorage.removeItem(STORAGE_KEY);
+                const db = await openAppDB();
+                if (db) try { db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).clear(); } catch (_) {}
+                updateRecordCount();
+                renderHistory();
+                showToast('Local data reset කළා.', 'info');
+            });
+        });
+
+        helpBtn?.addEventListener('click', () => {
+            showToast('⌨️ 0-9 / + - * / • Enter = Calculate • Backspace = Delete • Escape = Close', 'info', 5000);
+        });
+
+        healthBtn?.addEventListener('click', () => {
+            const checks = [
+                ['Secure calculation engine', true],
+                ['IndexedDB storage', 'indexedDB' in window],
+                ['Offline cache', 'serviceWorker' in navigator],
+                ['Web Share', !!navigator.share],
+                ['Local storage', (() => { try { localStorage.setItem('__wm_test','1'); localStorage.removeItem('__wm_test'); return true; } catch (_) { return false; } })()]
+            ];
+            result.innerHTML = checks.map(([name, ok]) => `${ok ? '✅' : '⚠️'} <strong>${name}</strong>: ${ok ? 'Ready' : 'Unavailable'}`).join('<br>');
+            result.classList.remove('hidden');
+        });
+    }
+
+    function setupKeyboardCalculator() {
+        document.addEventListener('keydown', e => {
+            if (e.target.matches('input,select,textarea')) return;
+            if (/^[0-9.+\-*/]$/.test(e.key)) {
+                e.preventDefault();
+                appendCharacter(e.key);
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                calculateResult();
+            } else if (e.key === 'Backspace') {
+                e.preventDefault();
+                deleteLastChar();
+            }
+        });
+    }
 
     function escapeHTML(str) { return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
 })();
